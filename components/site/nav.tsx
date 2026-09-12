@@ -19,7 +19,6 @@ function getLinks(isLoggedIn: boolean) {
       { href: "/results", label: "Results" },
       { href: "/players", label: "Players" },
       { href: "/about", label: "About" },
-      { href: "/partners", label: "Partners" },
     ];
   }
   return [

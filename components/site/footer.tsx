@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { Container } from "@/components/ui/container";
+import { getPartners } from "@/lib/data/site";
 
 const nav = [
   { href: "/tour-schedule", label: "Tour Schedule" },
@@ -8,7 +9,6 @@ const nav = [
   { href: "/results", label: "Results" },
   { href: "/players", label: "Players" },
   { href: "/about", label: "About" },
-  { href: "/partners", label: "Partners" },
   { href: "/register", label: "Join" },
 ];
 
@@ -18,9 +18,30 @@ const legal = [
   { href: "/competition-rules", label: "Competition Rules" },
 ];
 
-export function Footer() {
+export async function Footer() {
+  const partners = await getPartners();
+
   return (
     <footer className="border-t border-white/10 bg-tp-dark">
+      {partners.length > 0 && (
+        <div className="border-b border-white/10 py-8">
+          <Container className="flex flex-wrap items-center justify-center gap-3">
+            {partners.map((partner) =>
+              partner.logo_url ? (
+                <div key={partner.id} className="flex items-center justify-center rounded-sm bg-tp-offwhite px-4 py-2.5">
+                  <Image
+                    src={partner.logo_url}
+                    alt={partner.name}
+                    width={120}
+                    height={48}
+                    className="h-6 w-auto object-contain"
+                  />
+                </div>
+              ) : null,
+            )}
+          </Container>
+        </div>
+      )}
       <Container className="grid gap-12 py-16 lg:grid-cols-4">
         <div>
           <Image src="/logo.png" alt="TP Tour" width={800} height={150} className="h-8 w-auto" />
