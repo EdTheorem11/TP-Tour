@@ -1,5 +1,6 @@
 import { Container } from "@/components/ui/container";
 import { LinkButton } from "@/components/ui/button";
+import { HeroBackground } from "@/components/site/hero-background";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -10,21 +11,21 @@ export const metadata: Metadata = {
 export default function AboutPage() {
   return (
     <>
-      <section className="border-b border-white/10 py-24 lg:py-32">
-        <Container className="max-w-3xl">
+      <HeroBackground src="/about-hero.png" alt="TP Tour members networking on the course">
+        <Container className="max-w-3xl py-32">
           <p className="text-xs font-semibold uppercase tracking-[0.35em] text-tp-gold">About TP Tour</p>
           <h1 className="mt-4 font-heading text-balance text-4xl font-bold uppercase leading-tight text-tp-offwhite sm:text-6xl">
             The Networking Happens Naturally.
           </h1>
-          <p className="mt-6 text-balance text-lg leading-relaxed text-tp-offwhite/70">
+          <p className="mt-6 max-w-xl text-balance text-lg leading-relaxed text-tp-offwhite/70">
             TP Tour was created to bring together people working across Finance, Crypto, Digital Assets and FinTech
             in the UAE through a shared love of golf.
           </p>
-          <p className="mt-4 text-balance text-lg leading-relaxed text-tp-offwhite/70">
+          <p className="mt-4 max-w-xl text-balance text-lg leading-relaxed text-tp-offwhite/70">
             No awkward networking events. No forced introductions. Just great golf, great courses and good people.
           </p>
         </Container>
-      </section>
+      </HeroBackground>
 
       <section className="py-20 lg:py-28">
         <Container>

@@ -1,9 +1,6 @@
-"use client";
-
-import { useRef, useState } from "react";
-import Image from "next/image";
 import { Container } from "@/components/ui/container";
 import { LinkButton } from "@/components/ui/button";
+import { HeroBackground } from "@/components/site/hero-background";
 
 export function Hero({
   eyebrow,
@@ -15,49 +12,10 @@ export function Hero({
   subheading: string;
 }) {
   const lines = heading.split(".").map((l) => l.trim()).filter(Boolean);
-  const sectionRef = useRef<HTMLElement>(null);
-  const [offset, setOffset] = useState({ x: 0, y: 0 });
-
-  const handleMouseMove = (e: React.MouseEvent<HTMLElement>) => {
-    const rect = sectionRef.current?.getBoundingClientRect();
-    if (!rect) return;
-    const x = (e.clientX - rect.left) / rect.width - 0.5;
-    const y = (e.clientY - rect.top) / rect.height - 0.5;
-    setOffset({ x, y });
-  };
-
-  const handleMouseLeave = () => setOffset({ x: 0, y: 0 });
 
   return (
-    <section
-      ref={sectionRef}
-      onMouseMove={handleMouseMove}
-      onMouseLeave={handleMouseLeave}
-      className="relative flex min-h-[92vh] items-center overflow-hidden bg-tp-black"
-    >
-      <div
-        className="absolute inset-[-4%] transition-transform duration-500 ease-out will-change-transform"
-        style={{ transform: `translate3d(${offset.x * -24}px, ${offset.y * -24}px, 0) scale(1.05)` }}
-      >
-        <Image
-          src="/hero.png"
-          alt="TP Tour — golf at sunrise with the Dubai skyline"
-          fill
-          priority
-          className="object-cover"
-        />
-      </div>
-      <div className="absolute inset-0 bg-tp-black/55" />
-      <div
-        className="absolute inset-0"
-        style={{
-          background:
-            "radial-gradient(ellipse 80% 60% at 50% -10%, rgba(31,122,85,0.35), transparent 60%), radial-gradient(ellipse 60% 50% at 90% 100%, rgba(195,164,109,0.18), transparent 60%)",
-        }}
-      />
-      <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-tp-black to-transparent" />
-
-      <Container className="relative z-10 py-32">
+    <HeroBackground src="/hero.png" alt="TP Tour — golf at sunrise with the Dubai skyline">
+      <Container className="py-32">
         <p className="mb-6 text-xs font-semibold uppercase tracking-[0.35em] text-tp-gold animate-reveal-up">
           {eyebrow}
         </p>
@@ -92,6 +50,6 @@ export function Hero({
           </LinkButton>
         </div>
       </Container>
-    </section>
+    </HeroBackground>
   );
 }
