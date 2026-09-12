@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Container } from "@/components/ui/container";
 import { LinkButton } from "@/components/ui/button";
-import { DraggableScrollRow } from "@/components/ui/draggable-scroll-row";
+import { ArrowScrollRow } from "@/components/ui/arrow-scroll-row";
 import type { TourEvent } from "@/lib/types";
 import { formatEventDateShort, tbc } from "@/lib/format";
 import { clsx } from "clsx";
@@ -23,7 +23,7 @@ export function ScheduleStrip({ events, seasonName }: { events: TourEvent[]; sea
         </div>
       </Container>
 
-      <DraggableScrollRow className="no-scrollbar overflow-x-auto pl-6 lg:pl-10">
+      <ArrowScrollRow className="no-scrollbar overflow-x-auto pl-6 lg:pl-10">
         <div className="flex w-max gap-4 pr-6 lg:pr-10">
           {events.map((event) => {
             const { day, month } = formatEventDateShort(event.event_date);
@@ -62,7 +62,7 @@ export function ScheduleStrip({ events, seasonName }: { events: TourEvent[]; sea
             );
           })}
         </div>
-      </DraggableScrollRow>
+      </ArrowScrollRow>
     </section>
   );
 }
