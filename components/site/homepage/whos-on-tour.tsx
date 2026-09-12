@@ -6,13 +6,8 @@ const MOCK_MEMBERS = [
   { initials: "JK", name: "James K.", company: "Investment Bank", industry: "Investment Banking", handicap: "8.2", events: 5, oom: 3 },
   { initials: "SM", name: "Sarah M.", company: "Crypto Exchange", industry: "Digital Assets", handicap: "14.6", events: 4, oom: 7 },
   { initials: "OA", name: "Omar A.", company: "Hedge Fund", industry: "Hedge Fund", handicap: "5.4", events: 6, oom: 1 },
-  { initials: "PR", name: "Priya R.", company: "Family Office", industry: "Family Office", handicap: "18.0", events: 3, oom: 12 },
   { initials: "DT", name: "Daniel T.", company: "FinTech Startup", industry: "FinTech", handicap: "11.3", events: 5, oom: 5 },
-  { initials: "LH", name: "Layla H.", company: "Private Equity Firm", industry: "Private Equity", handicap: "20.1", events: 2, oom: 18 },
-  { initials: "MB", name: "Michael B.", company: "Brokerage", industry: "Brokerage", handicap: "9.7", events: 6, oom: 2 },
   { initials: "FS", name: "Fatima S.", company: "Recruitment Firm", industry: "Recruitment", handicap: "16.4", events: 4, oom: 9 },
-  { initials: "AP", name: "Alex P.", company: "Wealth Advisory", industry: "Professional Services", handicap: "12.8", events: 5, oom: 6 },
-  { initials: "CN", name: "Chris N.", company: "Blockchain Fund", industry: "Blockchain", handicap: "7.5", events: 6, oom: 4 },
 ];
 
 export function WhosOnTour() {
