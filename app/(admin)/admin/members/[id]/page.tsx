@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { getMemberAdmin, getMemberHandicapHistory } from "@/lib/data/admin";
+import { getCurrentProfile } from "@/lib/data/current-user";
 import { Field, inputClass } from "@/components/admin/form";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,6 +19,8 @@ export default async function AdminMemberDetailPage({ params }: { params: Promis
   const { id } = await params;
   const member = await getMemberAdmin(id);
   if (!member) notFound();
+  const currentAdmin = await getCurrentProfile();
+  const isSuperAdmin = currentAdmin?.role === "super_admin";
 
   const history = await getMemberHandicapHistory(id) as Array<{
     id: string;
@@ -102,21 +105,25 @@ export default async function AdminMemberDetailPage({ params }: { params: Promis
           Current: <span className="text-tp-offwhite">{formatHandicap(member.current_handicap)}</span>
         </p>
 
-        <form
-          action={async (fd: FormData) => {
-            "use server";
-            await adminAdjustHandicap(id, Number(fd.get("new_handicap")), String(fd.get("reason") ?? ""));
-          }}
-          className="mt-4 flex flex-wrap items-end gap-3"
-        >
-          <Field label="New Handicap">
-            <input type="number" step="0.1" name="new_handicap" required className={inputClass + " w-32"} />
-          </Field>
-          <Field label="Reason">
-            <input name="reason" className={inputClass} />
-          </Field>
-          <Button type="submit" variant="outline" size="sm">Adjust Handicap</Button>
-        </form>
+        {isSuperAdmin ? (
+          <form
+            action={async (fd: FormData) => {
+              "use server";
+              await adminAdjustHandicap(id, Number(fd.get("new_handicap")), String(fd.get("reason") ?? ""));
+            }}
+            className="mt-4 flex flex-wrap items-end gap-3"
+          >
+            <Field label="New Handicap">
+              <input type="number" step="0.1" name="new_handicap" required className={inputClass + " w-32"} />
+            </Field>
+            <Field label="Reason">
+              <input name="reason" className={inputClass} />
+            </Field>
+            <Button type="submit" variant="outline" size="sm">Adjust Handicap</Button>
+          </form>
+        ) : (
+          <p className="mt-3 text-xs text-tp-offwhite/40">Only a super admin can adjust a member&rsquo;s handicap.</p>
+        )}
 
         {pendingChanges.length > 0 && (
           <div className="mt-6">
@@ -125,9 +132,13 @@ export default async function AdminMemberDetailPage({ params }: { params: Promis
               {pendingChanges.map((h) => (
                 <li key={h.id} className="flex items-center justify-between border border-white/10 bg-tp-dark px-4 py-2.5 text-sm">
                   <span>{formatHandicap(h.old_handicap)} &rarr; {formatHandicap(h.new_handicap)} &middot; {tbc(h.reason)}</span>
-                  <form action={approveHandicapChange.bind(null, id, h.id)}>
-                    <button className="text-xs text-tp-green-light hover:underline">Approve</button>
-                  </form>
+                  {isSuperAdmin ? (
+                    <form action={approveHandicapChange.bind(null, id, h.id)}>
+                      <button className="text-xs text-tp-green-light hover:underline">Approve</button>
+                    </form>
+                  ) : (
+                    <span className="text-xs uppercase tracking-[0.1em] text-tp-offwhite/30">Super admin only</span>
+                  )}
                 </li>
               ))}
             </ul>

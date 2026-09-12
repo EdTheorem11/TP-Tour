@@ -30,7 +30,7 @@ export default async function AdminDashboardPage() {
 
       <div className="mt-8 flex flex-wrap gap-3">
         <LinkButton href="/admin/events/new" variant="gold" size="sm">Create Event</LinkButton>
-        <LinkButton href="/admin/members" variant="outline" size="sm">Add Member</LinkButton>
+        <LinkButton href="/admin/approvals" variant="outline" size="sm">Pending Approvals</LinkButton>
         <LinkButton href="/admin/scoring" variant="outline" size="sm">Enter Scores</LinkButton>
         <LinkButton href="/admin/results" variant="outline" size="sm">Publish Results</LinkButton>
       </div>

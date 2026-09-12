@@ -2,10 +2,12 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { getCurrentProfile } from "@/lib/data/current-user";
+import { getPendingMembers, getPendingHandicapChanges } from "@/lib/data/admin";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 
 const navItems = [
   { href: "/admin", label: "Dashboard" },
+  { href: "/admin/approvals", label: "Approvals" },
   { href: "/admin/events", label: "Events" },
   { href: "/admin/entries", label: "Entries" },
   { href: "/admin/members", label: "Members" },
@@ -28,6 +30,11 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     }
   }
 
+  const [pendingMembers, pendingHandicaps] = previewMode
+    ? [[], []]
+    : await Promise.all([getPendingMembers(), getPendingHandicapChanges()]);
+  const pendingCount = pendingMembers.length + pendingHandicaps.length;
+
   return (
     <div className="flex min-h-screen bg-tp-black text-tp-offwhite">
       <aside className="hidden w-64 shrink-0 border-r border-white/10 bg-tp-dark p-6 lg:block">
@@ -41,9 +48,14 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             <Link
               key={item.href}
               href={item.href}
-              className="block px-3 py-2.5 text-sm font-medium text-tp-offwhite/70 transition-colors hover:bg-white/5 hover:text-tp-offwhite"
+              className="flex items-center justify-between px-3 py-2.5 text-sm font-medium text-tp-offwhite/70 transition-colors hover:bg-white/5 hover:text-tp-offwhite"
             >
               {item.label}
+              {item.href === "/admin/approvals" && pendingCount > 0 && (
+                <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-tp-green px-1.5 text-[11px] font-bold text-tp-offwhite">
+                  {pendingCount}
+                </span>
+              )}
             </Link>
           ))}
         </nav>
@@ -58,6 +70,14 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           <Link href="/" className="flex items-center gap-2">
             <Image src="/logo.png" alt="TP Tour" width={800} height={150} className="h-6 w-auto" />
             <span className="text-sm font-semibold uppercase tracking-[0.1em] text-tp-offwhite/60">Admin</span>
+          </Link>
+          <Link href="/admin/approvals" className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.1em] text-tp-offwhite/70">
+            Approvals
+            {pendingCount > 0 && (
+              <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-tp-green px-1.5 text-[11px] font-bold text-tp-offwhite">
+                {pendingCount}
+              </span>
+            )}
           </Link>
         </header>
         {previewMode && (

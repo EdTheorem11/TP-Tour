@@ -1,10 +1,13 @@
 "use client";
 
 import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Container } from "@/components/ui/container";
 import { Button } from "@/components/ui/button";
 
 export default function ErrorBoundary({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
+  const router = useRouter();
+
   useEffect(() => {
     console.error(error);
   }, [error]);
@@ -23,7 +26,7 @@ export default function ErrorBoundary({ error, reset }: { error: Error & { diges
           <Button variant="gold" onClick={() => reset()}>
             Try Again
           </Button>
-          <Button variant="outline" onClick={() => (window.location.href = "/")}>
+          <Button variant="outline" onClick={() => router.push("/")}>
             Back to Home
           </Button>
         </div>

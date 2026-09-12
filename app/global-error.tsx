@@ -19,6 +19,7 @@ export default function GlobalError({ reset }: { error: Error & { digest?: strin
             >
               Try Again
             </button>
+            {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- this file replaces the root layout on catastrophic errors, so the router context Link relies on may not be mounted */}
             <a
               href="/"
               className="border border-tp-offwhite/30 px-6 py-3 text-sm font-semibold uppercase tracking-[0.12em]"

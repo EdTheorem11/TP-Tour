@@ -102,6 +102,38 @@ export async function getMemberAdmin(id: string): Promise<MemberProfile | null> 
   }, null);
 }
 
+export async function getPendingMembers(): Promise<MemberProfile[]> {
+  return safe(async () => {
+    const supabase = await createClient();
+    const { data } = await supabase
+      .from("member_profiles")
+      .select("*")
+      .eq("status", "pending")
+      .order("created_at", { ascending: true });
+    return (data as MemberProfile[]) ?? [];
+  }, []);
+}
+
+export async function getPendingHandicapChanges() {
+  return safe(async () => {
+    const supabase = await createClient();
+    const { data } = await supabase
+      .from("handicap_history")
+      .select("*, member_profiles(first_name, last_name)")
+      .eq("status", "pending")
+      .order("created_at", { ascending: true });
+    return data ?? [];
+  }, [] as Array<{
+    id: string;
+    member_id: string;
+    old_handicap: number | null;
+    new_handicap: number;
+    reason: string | null;
+    created_at: string;
+    member_profiles: { first_name: string; last_name: string } | null;
+  }>);
+}
+
 export async function getMemberHandicapHistory(memberId: string) {
   return safe(async () => {
     const supabase = await createClient();
