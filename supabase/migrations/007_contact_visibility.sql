@@ -4,6 +4,9 @@
 
 alter table member_profiles add column if not exists show_contact_publicly boolean not null default false;
 
+-- Postgres only allows CREATE OR REPLACE VIEW to append new columns at the
+-- end, not insert them mid-list — mobile/email go last, after the original
+-- column order, or it errors trying to "rename" existing columns.
 create or replace view player_directory as
 select
   mp.id,
@@ -15,11 +18,11 @@ select
   case when mp.show_company_publicly then mp.company else null end as company,
   case when mp.show_job_title_publicly then mp.job_title else null end as job_title,
   mp.home_golf_club,
-  case when mp.show_contact_publicly then mp.mobile else null end as mobile,
-  case when mp.show_contact_publicly then mp.email else null end as email,
   s.id as current_season_id,
   oom.rank as tour_rank,
-  oom.counting_points as oom_points
+  oom.counting_points as oom_points,
+  case when mp.show_contact_publicly then mp.mobile else null end as mobile,
+  case when mp.show_contact_publicly then mp.email else null end as email
 from member_profiles mp
 left join seasons s on s.is_current = true
 left join order_of_merit_points oom on oom.season_id = s.id and oom.member_id = mp.id
