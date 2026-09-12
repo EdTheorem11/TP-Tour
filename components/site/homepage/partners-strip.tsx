@@ -1,10 +1,12 @@
 import Image from "next/image";
 import { Container } from "@/components/ui/container";
+import { LinkButton } from "@/components/ui/button";
 import type { Partner } from "@/lib/types";
 
-export function PartnersStrip({ partners }: { partners: Partner[] }) {
-  if (partners.length === 0) return null;
+const PARTNER_EMAIL = "Ed@theorem-partners.com";
+const PARTNER_MAILTO = `mailto:${PARTNER_EMAIL}?subject=${encodeURIComponent("TP Tour Partnership Enquiry")}`;
 
+export function PartnersStrip({ partners }: { partners: Partner[] }) {
   const titlePartner = partners.find((p) => p.sponsor_level === "title_partner");
   const others = partners.filter((p) => p.sponsor_level !== "title_partner");
 
@@ -57,6 +59,12 @@ export function PartnersStrip({ partners }: { partners: Partner[] }) {
             </div>
           </>
         )}
+
+        <div className="mt-12 text-center">
+          <LinkButton href={PARTNER_MAILTO} variant="outline" size="sm">
+            Become a Partner
+          </LinkButton>
+        </div>
       </Container>
     </section>
   );

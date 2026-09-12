@@ -12,11 +12,7 @@ const nav = [
   { href: "/register", label: "Join" },
 ];
 
-const legal = [
-  { href: "/privacy-policy", label: "Privacy Policy" },
-  { href: "/terms", label: "Terms" },
-  { href: "/competition-rules", label: "Competition Rules" },
-];
+const legal = [{ href: "/terms", label: "TP Tour Terms" }];
 
 export async function Footer() {
   const partners = await getPartners();
