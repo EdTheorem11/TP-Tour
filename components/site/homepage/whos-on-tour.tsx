@@ -24,8 +24,8 @@ export function WhosOnTour() {
         </p>
       </Container>
 
-      <div className="no-scrollbar mt-14 overflow-x-auto pl-6 lg:pl-10">
-        <div className="flex w-max gap-4 pr-6 lg:pr-10">
+      <div className="mt-14 px-6 lg:px-10">
+        <div className="flex flex-wrap justify-center gap-4">
           {MOCK_MEMBERS.map((m) => (
             <div key={m.name} className="w-60 shrink-0 border border-white/10 bg-tp-black p-6">
               <span className="flex h-14 w-14 items-center justify-center rounded-full bg-tp-green/25 font-heading text-lg font-bold text-tp-green-light">
