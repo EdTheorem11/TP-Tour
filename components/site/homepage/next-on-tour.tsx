@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { Container } from "@/components/ui/container";
 import { LinkButton } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -26,8 +27,20 @@ export function NextOnTour({ event, capacity }: { event: TourEvent | null; capac
   ];
 
   return (
-    <section className="border-y border-white/10 bg-tp-dark">
-      <Container className="grid gap-10 py-16 lg:grid-cols-[1fr_1.1fr] lg:items-center lg:py-20">
+    <section className="relative overflow-hidden border-y border-white/10 bg-tp-dark">
+      {event.hero_image_url && (
+        <>
+          <Image
+            src={event.hero_image_url}
+            alt=""
+            fill
+            className="object-cover"
+            priority
+          />
+          <div className="absolute inset-0 bg-tp-black/70" />
+        </>
+      )}
+      <Container className="relative z-10 grid gap-10 py-16 lg:grid-cols-[1fr_1.1fr] lg:items-center lg:py-20">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.35em] text-tp-gold">Next on Tour</p>
           <h2 className="mt-4 font-heading text-4xl font-bold uppercase leading-tight text-tp-offwhite sm:text-5xl">
