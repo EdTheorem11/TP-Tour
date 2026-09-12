@@ -15,6 +15,8 @@ export function ProfileForm({ profile }: { profile: MemberProfile }) {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
+  const [firstName, setFirstName] = useState(profile.first_name ?? "");
+  const [lastName, setLastName] = useState(profile.last_name ?? "");
   const [mobile, setMobile] = useState(profile.mobile ?? "");
   const [company, setCompany] = useState(profile.company ?? "");
   const [jobTitle, setJobTitle] = useState(profile.job_title ?? "");
@@ -34,6 +36,8 @@ export function ProfileForm({ profile }: { profile: MemberProfile }) {
     setSaving(true);
     setMessage(null);
     const result = await updateMyProfile({
+      firstName,
+      lastName,
       mobile,
       company,
       jobTitle,
@@ -66,6 +70,14 @@ export function ProfileForm({ profile }: { profile: MemberProfile }) {
       <form onSubmit={onSaveProfile} className="space-y-6">
         <h2 className="font-heading text-lg font-bold uppercase text-tp-offwhite">Profile</h2>
         <div className="grid gap-5 sm:grid-cols-2">
+          <div>
+            <label className={labelClass}>First Name</label>
+            <input required className={inputClass} value={firstName} onChange={(e) => setFirstName(e.target.value)} />
+          </div>
+          <div>
+            <label className={labelClass}>Last Name</label>
+            <input required className={inputClass} value={lastName} onChange={(e) => setLastName(e.target.value)} />
+          </div>
           <div>
             <label className={labelClass}>Mobile</label>
             <input className={inputClass} value={mobile} onChange={(e) => setMobile(e.target.value)} />

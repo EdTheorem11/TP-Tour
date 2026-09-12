@@ -4,6 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 
 export interface ProfileUpdateInput {
+  firstName: string;
+  lastName: string;
   mobile?: string;
   company?: string;
   jobTitle?: string;
@@ -21,10 +23,15 @@ export async function updateMyProfile(input: ProfileUpdateInput): Promise<{ erro
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { error: "Not signed in." };
+  if (!input.firstName.trim() || !input.lastName.trim()) {
+    return { error: "First and last name are required." };
+  }
 
   const { error } = await supabase
     .from("member_profiles")
     .update({
+      first_name: input.firstName.trim(),
+      last_name: input.lastName.trim(),
       mobile: input.mobile ?? null,
       company: input.company ?? null,
       job_title: input.jobTitle ?? null,
@@ -39,6 +46,7 @@ export async function updateMyProfile(input: ProfileUpdateInput): Promise<{ erro
 
   if (error) return { error: error.message };
 
+  revalidatePath("/my-tp-tour");
   revalidatePath("/my-tp-tour/profile");
   revalidatePath(`/players/${user.id}`);
   return {};
