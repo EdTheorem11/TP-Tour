@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { updateMyProfile, submitMyHandicapChange } from "@/lib/actions/profile";
+import { updateMyProfile, submitMyHandicapChange, uploadMyAvatar, removeMyAvatar } from "@/lib/actions/profile";
 import { INDUSTRY_OPTIONS, type MemberProfile } from "@/lib/types";
 
 const inputClass =
@@ -14,6 +14,11 @@ export function ProfileForm({ profile }: { profile: MemberProfile }) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [avatarUrl, setAvatarUrl] = useState(profile.avatar_url ?? null);
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const [avatarMessage, setAvatarMessage] = useState<string | null>(null);
 
   const [firstName, setFirstName] = useState(profile.first_name ?? "");
   const [lastName, setLastName] = useState(profile.last_name ?? "");
@@ -53,6 +58,42 @@ export function ProfileForm({ profile }: { profile: MemberProfile }) {
     router.refresh();
   };
 
+  const onAvatarSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const localPreview = URL.createObjectURL(file);
+    setAvatarUrl(localPreview);
+    setAvatarUploading(true);
+    setAvatarMessage(null);
+
+    const fd = new FormData();
+    fd.set("avatar", file);
+    const result = await uploadMyAvatar(fd);
+
+    setAvatarUploading(false);
+    if (result.error) {
+      setAvatarMessage(result.error);
+      setAvatarUrl(profile.avatar_url ?? null);
+    } else if (result.url) {
+      setAvatarUrl(result.url);
+      router.refresh();
+    }
+  };
+
+  const onRemoveAvatar = async () => {
+    setAvatarUploading(true);
+    setAvatarMessage(null);
+    const result = await removeMyAvatar();
+    setAvatarUploading(false);
+    if (result.error) {
+      setAvatarMessage(result.error);
+    } else {
+      setAvatarUrl(null);
+      router.refresh();
+    }
+  };
+
   const onSubmitHandicap = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newHandicap) return;
@@ -67,7 +108,43 @@ export function ProfileForm({ profile }: { profile: MemberProfile }) {
 
   return (
     <div className="space-y-14">
-      <form onSubmit={onSaveProfile} className="space-y-6">
+      <div>
+        <h2 className="font-heading text-lg font-bold uppercase text-tp-offwhite">Profile Picture</h2>
+        <div className="mt-5 flex items-center gap-5">
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-full bg-tp-green/25 bg-cover bg-center text-xl font-bold text-tp-green-light transition-opacity hover:opacity-80"
+            style={avatarUrl ? { backgroundImage: `url(${avatarUrl})` } : undefined}
+            aria-label="Upload profile picture"
+          >
+            {!avatarUrl && `${profile.first_name[0] ?? ""}${profile.last_name[0] ?? ""}`}
+          </button>
+          <div>
+            <div className="flex gap-3">
+              <Button type="button" variant="outline" size="sm" disabled={avatarUploading} onClick={() => fileInputRef.current?.click()}>
+                {avatarUploading ? "Uploading…" : "Upload Photo"}
+              </Button>
+              {avatarUrl && (
+                <Button type="button" variant="ghost" size="sm" disabled={avatarUploading} onClick={onRemoveAvatar}>
+                  Remove
+                </Button>
+              )}
+            </div>
+            <p className="mt-2 text-xs text-tp-offwhite/40">JPG or PNG, up to 5MB.</p>
+            {avatarMessage && <p className="mt-2 text-xs text-red-400">{avatarMessage}</p>}
+          </div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={onAvatarSelected}
+          />
+        </div>
+      </div>
+
+      <form onSubmit={onSaveProfile} className="space-y-6 border-t border-white/10 pt-10">
         <h2 className="font-heading text-lg font-bold uppercase text-tp-offwhite">Profile</h2>
         <div className="grid gap-5 sm:grid-cols-2">
           <div>

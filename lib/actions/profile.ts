@@ -52,6 +52,58 @@ export async function updateMyProfile(input: ProfileUpdateInput): Promise<{ erro
   return {};
 }
 
+const MAX_AVATAR_BYTES = 5 * 1024 * 1024;
+
+export async function uploadMyAvatar(formData: FormData): Promise<{ error?: string; url?: string }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Not signed in." };
+
+  const file = formData.get("avatar");
+  if (!(file instanceof File) || file.size === 0) return { error: "No file selected." };
+  if (!file.type.startsWith("image/")) return { error: "Please upload an image file." };
+  if (file.size > MAX_AVATAR_BYTES) return { error: "Image must be under 5MB." };
+
+  const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
+  const path = `${user.id}/avatar.${ext}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from("avatars")
+    .upload(path, file, { upsert: true, cacheControl: "3600", contentType: file.type });
+  if (uploadError) return { error: uploadError.message };
+
+  const { data: publicUrlData } = supabase.storage.from("avatars").getPublicUrl(path);
+  const url = `${publicUrlData.publicUrl}?t=${Date.now()}`;
+
+  const { error: updateError } = await supabase.from("member_profiles").update({ avatar_url: url }).eq("id", user.id);
+  if (updateError) return { error: updateError.message };
+
+  revalidatePath("/my-tp-tour");
+  revalidatePath("/my-tp-tour/profile");
+  revalidatePath(`/players/${user.id}`);
+  revalidatePath("/players");
+  return { url };
+}
+
+export async function removeMyAvatar(): Promise<{ error?: string }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Not signed in." };
+
+  const { error } = await supabase.from("member_profiles").update({ avatar_url: null }).eq("id", user.id);
+  if (error) return { error: error.message };
+
+  revalidatePath("/my-tp-tour");
+  revalidatePath("/my-tp-tour/profile");
+  revalidatePath(`/players/${user.id}`);
+  revalidatePath("/players");
+  return {};
+}
+
 export async function submitMyHandicapChange(newHandicap: number, reason: string): Promise<{ error?: string; pending?: boolean }> {
   const supabase = await createClient();
   const {
