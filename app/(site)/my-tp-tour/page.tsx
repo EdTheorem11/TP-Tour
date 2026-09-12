@@ -116,6 +116,13 @@ export default async function MyTpTourPage() {
                   Order of Merit &rarr;
                 </Link>
               </li>
+              {["admin", "super_admin"].includes(profile.role) && (
+                <li>
+                  <Link href="/admin" className="text-tp-gold hover:text-tp-gold-light">
+                    Admin Panel &rarr;
+                  </Link>
+                </li>
+              )}
             </ul>
           </div>
         </div>
