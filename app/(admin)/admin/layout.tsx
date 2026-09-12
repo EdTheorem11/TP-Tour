@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { getCurrentProfile } from "@/lib/data/current-user";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 
@@ -30,10 +31,10 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   return (
     <div className="flex min-h-screen bg-tp-black text-tp-offwhite">
       <aside className="hidden w-64 shrink-0 border-r border-white/10 bg-tp-dark p-6 lg:block">
-        <Link href="/" className="font-heading text-lg font-bold tracking-[0.15em]">
-          TP <span className="text-tp-gold">TOUR</span>
+        <Link href="/">
+          <Image src="/logo.png" alt="TP Tour" width={800} height={150} className="h-7 w-auto" />
         </Link>
-        <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.15em] text-tp-offwhite/40">Admin Panel</p>
+        <p className="mt-2 text-[10px] font-semibold uppercase tracking-[0.15em] text-tp-offwhite/40">Admin Panel</p>
 
         <nav className="mt-10 space-y-1">
           {navItems.map((item) => (
@@ -54,8 +55,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
       <div className="flex-1">
         <header className="flex items-center justify-between border-b border-white/10 px-6 py-4 lg:hidden">
-          <Link href="/" className="font-heading text-lg font-bold tracking-[0.15em]">
-            TP <span className="text-tp-gold">TOUR</span> Admin
+          <Link href="/" className="flex items-center gap-2">
+            <Image src="/logo.png" alt="TP Tour" width={800} height={150} className="h-6 w-auto" />
+            <span className="text-sm font-semibold uppercase tracking-[0.1em] text-tp-offwhite/60">Admin</span>
           </Link>
         </header>
         {previewMode && (

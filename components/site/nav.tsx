@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 import { clsx } from "clsx";
+import Image from "next/image";
 import { Menu, X } from "lucide-react";
 import { Container } from "@/components/ui/container";
 import { LinkButton } from "@/components/ui/button";
@@ -52,8 +53,8 @@ export function Nav({
       )}
     >
       <Container className="flex h-20 items-center justify-between">
-        <Link href="/" className="font-heading text-xl font-bold tracking-[0.15em] text-tp-offwhite">
-          TP <span className="text-tp-gold">TOUR</span>
+        <Link href="/" className="shrink-0">
+          <Image src="/logo.png" alt="TP Tour" width={800} height={150} className="h-8 w-auto" priority />
         </Link>
 
         <nav className="hidden items-center gap-8 lg:flex">

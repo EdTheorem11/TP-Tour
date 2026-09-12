@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { Container } from "@/components/ui/container";
 
 const nav = [
@@ -22,9 +23,7 @@ export function Footer() {
     <footer className="border-t border-white/10 bg-tp-dark">
       <Container className="grid gap-12 py-16 lg:grid-cols-4">
         <div>
-          <div className="font-heading text-xl font-bold tracking-[0.15em]">
-            TP <span className="text-tp-gold">TOUR</span>
-          </div>
+          <Image src="/logo.png" alt="TP Tour" width={800} height={150} className="h-8 w-auto" />
           <p className="mt-3 text-sm font-medium uppercase tracking-[0.12em] text-tp-offwhite/50">
             Golf. Network. Compete.
           </p>

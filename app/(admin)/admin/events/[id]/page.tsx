@@ -6,8 +6,15 @@ import { updateEvent, deleteEvent, assignEventPartner, removeEventPartner } from
 import { Button, LinkButton } from "@/components/ui/button";
 import type { TourEvent, Partner } from "@/lib/types";
 
-export default async function EditEventPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function EditEventPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ saved?: string }>;
+}) {
   const { id } = await params;
+  const { saved } = await searchParams;
   const supabase = await createClient();
   const { data: event } = await supabase.from("events").select("*").eq("id", id).single();
   if (!event) notFound();
@@ -27,6 +34,12 @@ export default async function EditEventPage({ params }: { params: Promise<{ id: 
 
   return (
     <div>
+      {saved === "1" && (
+        <div className="mb-6 border border-tp-green/40 bg-tp-green/10 px-5 py-3 text-sm text-tp-green-light">
+          Changes saved.
+        </div>
+      )}
+
       <div className="flex flex-wrap items-center justify-between gap-4">
         <h1 className="font-heading text-3xl font-bold uppercase text-tp-offwhite">{(event as TourEvent).name}</h1>
         <div className="flex gap-3">
