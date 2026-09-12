@@ -1,7 +1,8 @@
 import Link from "next/link";
 import Image from "next/image";
 import { Container } from "@/components/ui/container";
-import { getPartners } from "@/lib/data/site";
+import { getPartners, getSiteContent } from "@/lib/data/site";
+import { getCurrentProfile } from "@/lib/data/current-user";
 
 const nav = [
   { href: "/tour-schedule", label: "Tour Schedule" },
@@ -9,13 +10,20 @@ const nav = [
   { href: "/results", label: "Results" },
   { href: "/players", label: "Players" },
   { href: "/about", label: "About" },
+  { href: "/how-it-works", label: "How It Works" },
   { href: "/register", label: "Join" },
 ];
 
 const legal = [{ href: "/terms", label: "TP Tour Terms" }];
 
 export async function Footer() {
-  const partners = await getPartners();
+  const [partners, profile, contact] = await Promise.all([
+    getPartners(),
+    getCurrentProfile(),
+    getSiteContent<{ email?: string; whatsapp?: string }>("contact_details"),
+  ]);
+  const isLoggedIn = !!profile;
+  const whatsappLink = contact?.whatsapp;
 
   return (
     <footer className="border-t border-white/10 bg-tp-dark">
@@ -84,6 +92,24 @@ export async function Footer() {
             Connect
           </h4>
           <ul className="space-y-2.5">
+            <li>
+              {isLoggedIn && whatsappLink ? (
+                <a
+                  href={whatsappLink}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-sm text-tp-offwhite/70 hover:text-tp-gold"
+                >
+                  Join Community
+                </a>
+              ) : isLoggedIn ? (
+                <span className="text-sm text-tp-offwhite/30">Join Community (Coming Soon)</span>
+              ) : (
+                <Link href="/register" className="text-sm text-tp-offwhite/70 hover:text-tp-gold">
+                  Join Community <span className="text-tp-offwhite/40">(Members Only — Sign Up)</span>
+                </Link>
+              )}
+            </li>
             <li>
               <a
                 href="https://linkedin.com"
