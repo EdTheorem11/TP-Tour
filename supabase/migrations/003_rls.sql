@@ -24,11 +24,14 @@ returns boolean language sql stable security definer set search_path = public as
   select coalesce((select status = 'approved' from member_profiles where id = auth.uid()), false);
 $$;
 
--- Prevent a plain admin from granting admin/super_admin privileges to anyone (only super_admin can)
+-- Prevent a plain admin from granting admin/super_admin privileges to anyone (only super_admin can).
+-- Only applies to updates made through the app (a real logged-in user, auth.uid() is not null) —
+-- direct database access (SQL Editor, migrations, the initial super_admin bootstrap) is already a
+-- trusted context and must not be blocked by this check.
 create or replace function prevent_privilege_escalation()
 returns trigger language plpgsql as $$
 begin
-  if new.role is distinct from old.role and new.role in ('admin', 'super_admin') and not is_super_admin() then
+  if auth.uid() is not null and new.role is distinct from old.role and new.role in ('admin', 'super_admin') and not is_super_admin() then
     raise exception 'Only a super admin can grant admin privileges';
   end if;
   return new;
