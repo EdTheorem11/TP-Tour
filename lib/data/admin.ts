@@ -14,20 +14,33 @@ async function safe<T>(fn: () => Promise<T>, fallback: T): Promise<T> {
 export async function getDashboardStats() {
   return safe(async () => {
     const supabase = await createClient();
-    const [{ count: totalMembers }, { count: approvedMembers }, { count: pendingMembers }, { data: nextEvent }] =
-      await Promise.all([
-        supabase.from("member_profiles").select("*", { count: "exact", head: true }),
-        supabase.from("member_profiles").select("*", { count: "exact", head: true }).eq("status", "approved"),
-        supabase.from("member_profiles").select("*", { count: "exact", head: true }).eq("status", "pending"),
-        supabase
-          .from("events")
-          .select("*")
-          .in("status", ["coming_soon", "entries_open", "limited_spaces", "sold_out"])
-          .gte("event_date", new Date().toISOString().slice(0, 10))
-          .order("event_date", { ascending: true })
-          .limit(1)
-          .maybeSingle(),
-      ]);
+    const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    const [
+      { count: totalMembers },
+      { count: approvedMembers },
+      { count: pendingMembers },
+      { count: pendingHandicapChanges },
+      { count: entriesThisWeek },
+      { data: nextEvent },
+    ] = await Promise.all([
+      supabase.from("member_profiles").select("*", { count: "exact", head: true }),
+      supabase.from("member_profiles").select("*", { count: "exact", head: true }).eq("status", "approved"),
+      supabase.from("member_profiles").select("*", { count: "exact", head: true }).eq("status", "pending"),
+      supabase.from("handicap_history").select("*", { count: "exact", head: true }).eq("status", "pending"),
+      supabase
+        .from("event_entries")
+        .select("*", { count: "exact", head: true })
+        .eq("status", "confirmed")
+        .gte("entry_date", weekAgo),
+      supabase
+        .from("events")
+        .select("*")
+        .in("status", ["coming_soon", "entries_open", "limited_spaces", "sold_out"])
+        .gte("event_date", new Date().toISOString().slice(0, 10))
+        .order("event_date", { ascending: true })
+        .limit(1)
+        .maybeSingle(),
+    ]);
 
     let nextEventEntries = 0;
     let nextEventSpaces: number | null = null;
@@ -47,6 +60,8 @@ export async function getDashboardStats() {
       totalMembers: totalMembers ?? 0,
       approvedMembers: approvedMembers ?? 0,
       pendingMembers: pendingMembers ?? 0,
+      pendingApprovals: (pendingMembers ?? 0) + (pendingHandicapChanges ?? 0),
+      entriesThisWeek: entriesThisWeek ?? 0,
       upcomingEvents: upcomingEvents ?? 0,
       nextEvent: nextEvent as TourEvent | null,
       nextEventEntries,
@@ -56,6 +71,8 @@ export async function getDashboardStats() {
     totalMembers: 0,
     approvedMembers: 0,
     pendingMembers: 0,
+    pendingApprovals: 0,
+    entriesThisWeek: 0,
     upcomingEvents: 0,
     nextEvent: null as TourEvent | null,
     nextEventEntries: 0,

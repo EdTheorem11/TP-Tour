@@ -7,6 +7,7 @@ import type {
   EventResult,
   Partner,
   EventCapacity,
+  EventPhoto,
 } from "@/lib/types";
 
 async function safe<T>(fn: () => Promise<T>, fallback: T): Promise<T> {
@@ -96,6 +97,22 @@ export async function getEventBySlug(slug: string): Promise<TourEvent | null> {
       .single();
     return (data as TourEvent) ?? null;
   }, null);
+}
+
+export async function getEventPhotos(eventId: string): Promise<EventPhoto[]> {
+  return safe(async () => {
+    const supabase = await createClient();
+    const { data } = await supabase
+      .from("event_photos")
+      .select("*")
+      .eq("event_id", eventId)
+      .order("sort_order", { ascending: true });
+    if (!data) return [];
+    return data.map((photo) => ({
+      ...photo,
+      url: supabase.storage.from("event-photos").getPublicUrl(photo.storage_path).data.publicUrl,
+    })) as EventPhoto[];
+  }, []);
 }
 
 export async function getOrderOfMerit(seasonId: string, limit?: number): Promise<OrderOfMeritPoint[]> {
@@ -214,7 +231,7 @@ export async function getPartnersForEvent(eventId: string): Promise<Partner[]> {
   }, []);
 }
 
-export async function getPlayerDirectory(search?: string) {
+export async function getPlayerDirectory(search?: string, industry?: string) {
   return safe(async () => {
     const supabase = await createClient();
     let query = supabase.from("player_directory").select("*").order("first_name", { ascending: true });
@@ -223,9 +240,21 @@ export async function getPlayerDirectory(search?: string) {
         `first_name.ilike.%${search}%,last_name.ilike.%${search}%,company.ilike.%${search}%,industry.ilike.%${search}%`,
       );
     }
+    if (industry) {
+      query = query.eq("industry", industry);
+    }
     const { data } = await query;
     return data ?? [];
   }, [] as import("@/lib/types").PlayerDirectoryEntry[]);
+}
+
+export async function getPlayerIndustries(): Promise<string[]> {
+  return safe(async () => {
+    const supabase = await createClient();
+    const { data } = await supabase.from("player_directory").select("industry").not("industry", "is", null);
+    const unique = Array.from(new Set((data ?? []).map((r) => r.industry as string))).filter(Boolean);
+    return unique.sort((a, b) => a.localeCompare(b));
+  }, []);
 }
 
 export async function getPlayerByIdPublic(id: string) {

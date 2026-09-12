@@ -3,10 +3,12 @@ import { notFound } from "next/navigation";
 import { Container } from "@/components/ui/container";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { EntryPanel } from "@/components/site/entry-panel";
+import { AddToCalendar } from "@/components/site/add-to-calendar";
 import {
   getEventBySlug,
   getEventCapacity,
   getEventEntryList,
+  getEventPhotos,
   getMyEventEntry,
   getMyWaitingListEntry,
   getPartnersForEvent,
@@ -31,10 +33,11 @@ export default async function EventDetailPage({ params }: { params: Promise<{ sl
   const event = await getEventBySlug(slug);
   if (!event) notFound();
 
-  const [capacity, entryList, partners, profile] = await Promise.all([
+  const [capacity, entryList, partners, photos, profile] = await Promise.all([
     getEventCapacity(event.id),
     getEventEntryList(event.id),
     getPartnersForEvent(event.id),
+    getEventPhotos(event.id),
     getCurrentProfile(),
   ]);
 
@@ -143,6 +146,30 @@ export default async function EventDetailPage({ params }: { params: Promise<{ sl
               </div>
             )}
 
+            {photos.length > 0 && (
+              <div className="mt-10">
+                <h2 className="font-heading text-xl font-bold uppercase text-tp-offwhite">Photos</h2>
+                <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
+                  {photos.map((photo) => (
+                    <a
+                      key={photo.id}
+                      href={photo.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="relative block aspect-square overflow-hidden bg-tp-dark"
+                    >
+                      <Image
+                        src={photo.url}
+                        alt={photo.caption ?? `${event.name} photo`}
+                        fill
+                        className="object-cover transition-transform hover:scale-105"
+                      />
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {entryList.length > 0 && (
               <div className="mt-10">
                 <h2 className="font-heading text-xl font-bold uppercase text-tp-offwhite">
@@ -163,7 +190,8 @@ export default async function EventDetailPage({ params }: { params: Promise<{ sl
             )}
           </div>
 
-          <div className="lg:sticky lg:top-28 lg:self-start">
+          <div className="space-y-4 lg:sticky lg:top-28 lg:self-start">
+            <AddToCalendar event={event} />
             <EntryPanel
               eventId={event.id}
               eventSlug={event.slug}

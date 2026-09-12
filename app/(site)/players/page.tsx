@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { Phone, Mail } from "lucide-react";
 import { Container } from "@/components/ui/container";
-import { LinkButton } from "@/components/ui/button";
+import { Button, LinkButton } from "@/components/ui/button";
 import { getCurrentProfile } from "@/lib/data/current-user";
-import { getPlayerDirectory } from "@/lib/data/site";
+import { getPlayerDirectory, getPlayerIndustries } from "@/lib/data/site";
 import { formatHandicap, tbc } from "@/lib/format";
 import type { Metadata } from "next";
 
@@ -15,7 +15,7 @@ export const metadata: Metadata = {
 export default async function PlayersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string }>;
+  searchParams: Promise<{ q?: string; industry?: string }>;
 }) {
   const params = await searchParams;
   const profile = await getCurrentProfile();
@@ -52,7 +52,10 @@ export default async function PlayersPage({
     );
   }
 
-  const players = await getPlayerDirectory(params.q);
+  const [players, industries] = await Promise.all([
+    getPlayerDirectory(params.q, params.industry),
+    getPlayerIndustries(),
+  ]);
 
   return (
     <section className="py-20 lg:py-28">
@@ -60,14 +63,39 @@ export default async function PlayersPage({
         <p className="text-xs font-semibold uppercase tracking-[0.35em] text-tp-gold">TP Tour</p>
         <h1 className="mt-3 font-heading text-4xl font-bold uppercase text-tp-offwhite sm:text-5xl">Players</h1>
 
-        <form className="mt-8 max-w-sm" action="/players" method="get">
-          <input
-            type="text"
-            name="q"
-            defaultValue={params.q}
-            placeholder="Search by name, company or industry"
-            className="w-full border border-white/15 bg-tp-dark px-4 py-3 text-sm text-tp-offwhite placeholder:text-tp-offwhite/30 focus:border-tp-gold focus:outline-none"
-          />
+        <form className="mt-8 flex flex-wrap items-end gap-3" action="/players" method="get">
+          <div className="min-w-[240px] flex-1">
+            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.1em] text-tp-offwhite/60">
+              Search
+            </label>
+            <input
+              type="text"
+              name="q"
+              defaultValue={params.q}
+              placeholder="Name, company or industry"
+              className="w-full border border-white/15 bg-tp-dark px-4 py-3 text-sm text-tp-offwhite placeholder:text-tp-offwhite/30 focus:border-tp-gold focus:outline-none"
+            />
+          </div>
+          <div className="min-w-[200px]">
+            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.1em] text-tp-offwhite/60">
+              Industry
+            </label>
+            <select
+              name="industry"
+              defaultValue={params.industry ?? ""}
+              className="w-full border border-white/15 bg-tp-dark px-4 py-3 text-sm text-tp-offwhite focus:border-tp-gold focus:outline-none"
+            >
+              <option value="">All Industries</option>
+              {industries.map((industry) => (
+                <option key={industry} value={industry}>
+                  {industry}
+                </option>
+              ))}
+            </select>
+          </div>
+          <Button type="submit" variant="outline" size="md">
+            Filter
+          </Button>
         </form>
 
         {players.length === 0 ? (

@@ -232,6 +232,16 @@ export interface Partner {
   active: boolean;
 }
 
+export interface EventPhoto {
+  id: string;
+  event_id: string;
+  storage_path: string;
+  caption: string | null;
+  sort_order: number;
+  created_at: string;
+  url: string;
+}
+
 export interface PlayerDirectoryEntry {
   id: string;
   first_name: string;

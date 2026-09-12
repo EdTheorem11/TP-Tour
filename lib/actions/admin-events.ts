@@ -276,6 +276,52 @@ export async function addCourseToClub(golfClubId: string, formData: FormData) {
   revalidatePath("/admin/golf-clubs");
 }
 
+// ---------------------------------------------------------------------------
+// Event photo gallery
+// ---------------------------------------------------------------------------
+
+const MAX_PHOTO_BYTES = 8 * 1024 * 1024;
+
+export async function uploadEventPhotos(eventId: string, formData: FormData) {
+  const { supabase } = await requireAdmin();
+
+  const files = formData.getAll("photos").filter((f): f is File => f instanceof File && f.size > 0);
+
+  const { data: event } = await supabase.from("events").select("slug").eq("id", eventId).single();
+  const { count } = await supabase
+    .from("event_photos")
+    .select("*", { count: "exact", head: true })
+    .eq("event_id", eventId);
+  let sortOrder = count ?? 0;
+
+  for (const file of files) {
+    if (!file.type.startsWith("image/") || file.size > MAX_PHOTO_BYTES) continue;
+    const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
+    const path = `${eventId}/${crypto.randomUUID()}.${ext}`;
+    const { error: uploadError } = await supabase.storage
+      .from("event-photos")
+      .upload(path, file, { contentType: file.type });
+    if (uploadError) continue;
+    await supabase.from("event_photos").insert({ event_id: eventId, storage_path: path, sort_order: sortOrder });
+    sortOrder += 1;
+  }
+
+  revalidatePath(`/admin/events/${eventId}`);
+  if (event) revalidatePath(`/events/${event.slug}`);
+  redirect(`/admin/events/${eventId}?saved=1`);
+}
+
+export async function deleteEventPhoto(eventId: string, photoId: string, storagePath: string) {
+  const { supabase } = await requireAdmin();
+  await supabase.storage.from("event-photos").remove([storagePath]);
+  const { error } = await supabase.from("event_photos").delete().eq("id", photoId);
+  if (error) throw new Error(error.message);
+
+  const { data: event } = await supabase.from("events").select("slug").eq("id", eventId).single();
+  revalidatePath(`/admin/events/${eventId}`);
+  if (event) revalidatePath(`/events/${event.slug}`);
+}
+
 export async function assignEventPartner(eventId: string, partnerId: string) {
   const { supabase } = await requireAdmin();
   const { error } = await supabase.from("event_partners").insert({ event_id: eventId, partner_id: partnerId });

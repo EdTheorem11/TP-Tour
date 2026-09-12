@@ -1,8 +1,17 @@
 import { notFound } from "next/navigation";
+import Image from "next/image";
 import { EventForm } from "@/components/admin/event-form";
 import { getAllSeasonsAdmin, getAllGolfClubs, getAllPartnersAdmin } from "@/lib/data/admin";
+import { getEventPhotos } from "@/lib/data/site";
 import { createClient } from "@/lib/supabase/server";
-import { updateEvent, deleteEvent, assignEventPartner, removeEventPartner } from "@/lib/actions/admin-events";
+import {
+  updateEvent,
+  deleteEvent,
+  assignEventPartner,
+  removeEventPartner,
+  uploadEventPhotos,
+  deleteEventPhoto,
+} from "@/lib/actions/admin-events";
 import { Button, LinkButton } from "@/components/ui/button";
 import type { TourEvent, Partner } from "@/lib/types";
 
@@ -19,11 +28,12 @@ export default async function EditEventPage({
   const { data: event } = await supabase.from("events").select("*").eq("id", id).single();
   if (!event) notFound();
 
-  const [seasons, golfClubs, partners, { data: assignedPartnerRows }] = await Promise.all([
+  const [seasons, golfClubs, partners, { data: assignedPartnerRows }, photos] = await Promise.all([
     getAllSeasonsAdmin(),
     getAllGolfClubs(),
     getAllPartnersAdmin(),
     supabase.from("event_partners").select("partner_id, partners(*)").eq("event_id", id),
+    getEventPhotos(id),
   ]);
 
   const assignedPartners = ((assignedPartnerRows as unknown as Array<{ partner_id: string; partners: Partner }>) ?? []).map((r) => r.partners);
@@ -78,6 +88,40 @@ export default async function EditEventPage({
             <Button type="submit" variant="outline" size="sm">Assign Partner</Button>
           </form>
         )}
+      </div>
+
+      <div className="mt-12 max-w-3xl border-t border-white/10 pt-8">
+        <h2 className="font-heading text-lg font-bold uppercase text-tp-offwhite">Photo Gallery</h2>
+
+        {photos.length > 0 && (
+          <div className="mt-4 grid grid-cols-3 gap-3 sm:grid-cols-4">
+            {photos.map((photo) => (
+              <div key={photo.id} className="group relative aspect-square overflow-hidden bg-tp-black">
+                <Image src={photo.url} alt={photo.caption ?? "Event photo"} fill className="object-cover" />
+                <form
+                  action={deleteEventPhoto.bind(null, id, photo.id, photo.storage_path)}
+                  className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 transition-opacity group-hover:opacity-100"
+                >
+                  <button type="submit" className="text-xs font-semibold uppercase tracking-[0.1em] text-red-400 hover:underline">
+                    Delete
+                  </button>
+                </form>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <form action={uploadEventPhotos.bind(null, id)} className="mt-4 flex flex-wrap items-center gap-3">
+          <input
+            type="file"
+            name="photos"
+            accept="image/*"
+            multiple
+            required
+            className="text-sm text-tp-offwhite/70 file:mr-3 file:border file:border-white/15 file:bg-tp-black file:px-3 file:py-2 file:text-xs file:font-semibold file:uppercase file:tracking-[0.1em] file:text-tp-offwhite"
+          />
+          <Button type="submit" variant="outline" size="sm">Upload Photos</Button>
+        </form>
       </div>
 
       <div className="mt-12 max-w-3xl border-t border-white/10 pt-8">

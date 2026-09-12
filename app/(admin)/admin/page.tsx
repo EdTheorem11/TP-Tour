@@ -9,7 +9,8 @@ export default async function AdminDashboardPage() {
   const cards = [
     { label: "Total Members", value: stats.totalMembers },
     { label: "Approved Members", value: stats.approvedMembers },
-    { label: "Pending Members", value: stats.pendingMembers },
+    { label: "Pending Approvals", value: stats.pendingApprovals, highlight: stats.pendingApprovals > 0 },
+    { label: "Entries This Week", value: stats.entriesThisWeek },
     { label: "Upcoming Events", value: stats.upcomingEvents },
     { label: "Next Event Entries", value: stats.nextEventEntries },
     { label: "Available Spaces", value: stats.nextEventSpaces ?? "—" },
@@ -19,13 +20,29 @@ export default async function AdminDashboardPage() {
     <div>
       <h1 className="font-heading text-3xl font-bold uppercase text-tp-offwhite">Dashboard</h1>
 
-      <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
-        {cards.map((c) => (
-          <div key={c.label} className="border border-white/10 bg-tp-dark p-5">
-            <p className="font-heading text-2xl font-bold text-tp-gold">{c.value}</p>
-            <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.1em] text-tp-offwhite/50">{c.label}</p>
-          </div>
-        ))}
+      <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
+        {cards.map((c) => {
+          const content = (
+            <>
+              <p className="font-heading text-2xl font-bold text-tp-gold">{c.value}</p>
+              <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.1em] text-tp-offwhite/50">{c.label}</p>
+            </>
+          );
+          const className = `border p-5 transition-colors ${
+            c.highlight
+              ? "border-tp-gold/50 bg-tp-gold/10 hover:border-tp-gold"
+              : "border-white/10 bg-tp-dark"
+          }`;
+          return c.highlight ? (
+            <Link key={c.label} href="/admin/approvals" className={className}>
+              {content}
+            </Link>
+          ) : (
+            <div key={c.label} className={className}>
+              {content}
+            </div>
+          );
+        })}
       </div>
 
       <div className="mt-8 flex flex-wrap gap-3">
