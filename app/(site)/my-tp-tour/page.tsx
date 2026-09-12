@@ -41,7 +41,7 @@ export default async function MyTpTourPage() {
 
         <p className="text-xs font-semibold uppercase tracking-[0.35em] text-tp-gold">My TP Tour</p>
         <h1 className="mt-3 font-heading text-4xl font-bold uppercase text-tp-offwhite sm:text-5xl">
-          Welcome Back, {profile.first_name}.
+          Welcome Back, <span className="text-tp-green-light">{profile.first_name}</span>.
         </h1>
 
         <div className="mt-10 grid grid-cols-2 gap-px overflow-hidden border border-white/10 bg-white/10 sm:grid-cols-3 lg:grid-cols-6">
