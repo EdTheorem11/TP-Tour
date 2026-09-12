@@ -127,7 +127,7 @@ export default async function AdminOrderOfMeritPage({ searchParams }: { searchPa
               <Field label="Reason">
                 <input name="reason" required className={inputClass} />
               </Field>
-              <Button type="submit" variant="outline" size="sm">Add Adjustment</Button>
+              <Button type="submit" variant="gold" size="sm">Add Adjustment</Button>
             </form>
 
             {adjustments.length > 0 && (
