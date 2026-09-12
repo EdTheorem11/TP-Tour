@@ -1,6 +1,7 @@
 import { Hero } from "@/components/site/homepage/hero";
 import { NextOnTour } from "@/components/site/homepage/next-on-tour";
 import { ScheduleStrip } from "@/components/site/homepage/schedule-strip";
+import { PlayMoreGolf } from "@/components/site/homepage/play-more-golf";
 import { OomPreview } from "@/components/site/homepage/oom-preview";
 import { LatestResults } from "@/components/site/homepage/latest-results";
 import { AboutStats } from "@/components/site/homepage/about-stats";
@@ -52,6 +53,7 @@ export default async function HomePage() {
       />
       <NextOnTour event={nextEvent} capacity={capacity} />
       {scheduleEvents.length > 0 && <ScheduleStrip events={scheduleEvents} seasonName={season?.name ?? ""} />}
+      <PlayMoreGolf />
       <OomPreview standings={standings} isLoggedIn={isLoggedIn} />
       <LatestResults event={latestEvent} results={results} isLoggedIn={isLoggedIn} />
       <AboutStats about={about} stats={stats} />
