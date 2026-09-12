@@ -58,11 +58,13 @@ export function Nav({
   }, []);
 
   const links = getLinks(isLoggedIn);
+  const isHome = pathname === "/";
 
   return (
     <header
       className={clsx(
-        "sticky top-0 z-50 transition-colors duration-300",
+        "z-50 transition-colors duration-300",
+        isHome ? "fixed inset-x-0 top-0" : "sticky top-0",
         scrolled || open ? "bg-tp-black/90 backdrop-blur-md border-b border-white/10" : "bg-transparent",
       )}
     >

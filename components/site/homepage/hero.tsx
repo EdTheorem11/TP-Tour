@@ -1,3 +1,6 @@
+"use client";
+
+import { useRef, useState } from "react";
 import Image from "next/image";
 import { Container } from "@/components/ui/container";
 import { LinkButton } from "@/components/ui/button";
@@ -12,16 +15,38 @@ export function Hero({
   subheading: string;
 }) {
   const lines = heading.split(".").map((l) => l.trim()).filter(Boolean);
+  const sectionRef = useRef<HTMLElement>(null);
+  const [offset, setOffset] = useState({ x: 0, y: 0 });
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLElement>) => {
+    const rect = sectionRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const x = (e.clientX - rect.left) / rect.width - 0.5;
+    const y = (e.clientY - rect.top) / rect.height - 0.5;
+    setOffset({ x, y });
+  };
+
+  const handleMouseLeave = () => setOffset({ x: 0, y: 0 });
 
   return (
-    <section className="relative flex min-h-[92vh] items-center overflow-hidden bg-tp-black">
-      <Image
-        src="/hero.png"
-        alt="TP Tour — golf at sunrise with the Dubai skyline"
-        fill
-        priority
-        className="object-cover"
-      />
+    <section
+      ref={sectionRef}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      className="relative flex min-h-[92vh] items-center overflow-hidden bg-tp-black"
+    >
+      <div
+        className="absolute inset-[-4%] transition-transform duration-500 ease-out will-change-transform"
+        style={{ transform: `translate3d(${offset.x * -24}px, ${offset.y * -24}px, 0) scale(1.05)` }}
+      >
+        <Image
+          src="/hero.png"
+          alt="TP Tour — golf at sunrise with the Dubai skyline"
+          fill
+          priority
+          className="object-cover"
+        />
+      </div>
       <div className="absolute inset-0 bg-tp-black/55" />
       <div
         className="absolute inset-0"
