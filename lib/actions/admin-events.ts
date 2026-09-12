@@ -154,7 +154,7 @@ export async function addEntryByEmail(eventId: string, formData: FormData) {
   if (!email) throw new Error("Email is required");
 
   const { data: member } = await supabase.from("member_profiles").select("id, current_handicap").eq("email", email).single();
-  if (!member) throw new Error("No member found with that email");
+  if (!member) redirect(`/admin/entries/${eventId}?error=${encodeURIComponent("No member found with that email.")}`);
 
   const { error } = await supabase.from("event_entries").insert({
     event_id: eventId,
@@ -163,10 +163,14 @@ export async function addEntryByEmail(eventId: string, formData: FormData) {
     status: "confirmed",
     agreed_to_rules: true,
   });
-  if (error) throw new Error(error.code === "23505" ? "That member is already entered." : error.message);
+  if (error) {
+    const message = error.code === "23505" ? "That member is already entered." : error.message;
+    redirect(`/admin/entries/${eventId}?error=${encodeURIComponent(message)}`);
+  }
 
   await supabase.from("admin_audit_log").insert({ admin_id: adminId, action: "add_entry", entity_type: "event_entries", entity_id: eventId });
   revalidatePath(`/admin/entries/${eventId}`);
+  redirect(`/admin/entries/${eventId}?added=1`);
 }
 
 export async function removeEntry(eventId: string, entryId: string) {

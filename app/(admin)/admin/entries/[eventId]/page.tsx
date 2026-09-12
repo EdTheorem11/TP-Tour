@@ -28,8 +28,15 @@ interface WaitingRow {
   member_profiles: { first_name: string; last_name: string; current_handicap: number | null } | null;
 }
 
-export default async function AdminEntriesForEventPage({ params }: { params: Promise<{ eventId: string }> }) {
+export default async function AdminEntriesForEventPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ eventId: string }>;
+  searchParams: Promise<{ added?: string; error?: string }>;
+}) {
   const { eventId } = await params;
+  const { added, error: errorMessage } = await searchParams;
   const supabase = await createClient();
   const { data: event } = await supabase.from("events").select("*").eq("id", eventId).single();
   if (!event) notFound();
@@ -47,10 +54,24 @@ export default async function AdminEntriesForEventPage({ params }: { params: Pro
         {(event as TourEvent).name} &mdash; Entries
       </h1>
 
+      {added === "1" && (
+        <div className="mt-6 border border-tp-green/40 bg-tp-green/10 px-5 py-3 text-sm text-tp-green-light">
+          Player added.
+        </div>
+      )}
+      {errorMessage && (
+        <div className="mt-6 border border-red-500/40 bg-red-500/10 px-5 py-3 text-sm text-red-400">
+          {errorMessage}
+        </div>
+      )}
+
       <form action={addEntryByEmail.bind(null, eventId)} className="mt-8 flex max-w-md gap-3">
         <input name="email" type="email" required placeholder="Member email" className={inputClass} />
         <Button type="submit" variant="gold" size="sm">Add Player</Button>
       </form>
+      <p className="mt-2 text-xs text-tp-offwhite/40">
+        The member must already have an account (any status) before they can be added this way.
+      </p>
 
       <div className="mt-8 overflow-x-auto">
         <table className="w-full min-w-[720px] border-collapse text-left text-sm">
