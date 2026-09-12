@@ -1,26 +1,70 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --tp-black: #0a0e0d;
+  --tp-dark: #111715;
+  --tp-offwhite: #f4f1e9;
+  --tp-green: #1f7a55;
+  --tp-green-light: #29a06f;
+  --tp-gold: #c3a46d;
+  --tp-gold-light: #d8c096;
+
+  --background: var(--tp-black);
+  --foreground: var(--tp-offwhite);
 }
 
 @theme inline {
+  --color-tp-black: var(--tp-black);
+  --color-tp-dark: var(--tp-dark);
+  --color-tp-offwhite: var(--tp-offwhite);
+  --color-tp-green: var(--tp-green);
+  --color-tp-green-light: var(--tp-green-light);
+  --color-tp-gold: var(--tp-gold);
+  --color-tp-gold-light: var(--tp-gold-light);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --font-heading: var(--font-sora);
+  --font-body: var(--font-inter);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-body), ui-sans-serif, system-ui, sans-serif;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading), ui-sans-serif, system-ui, sans-serif;
+}
+
+::selection {
+  background: var(--tp-green);
+  color: var(--tp-offwhite);
+}
+
+.text-balance {
+  text-wrap: balance;
+}
+
+@keyframes reveal-up {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-reveal-up {
+  animation: reveal-up 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }

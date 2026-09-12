@@ -1,36 +1,63 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# TP Tour
 
-## Getting Started
+**Golf. Network. Compete.** The UAE's golf society management platform for professionals across Finance, Crypto, Digital Assets and FinTech.
 
-First, run the development server:
+Built with Next.js (App Router) + TypeScript + Tailwind CSS + Supabase (Postgres, Auth, RLS).
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## What's here
+
+- **Public marketing site** — home, tour schedule, event detail, order of merit, results, about, partners.
+- **Member platform** — registration/login, My TP Tour dashboard, event entry + waiting list, personal results, handicap submission, profile & directory-visibility controls, players directory, player profiles.
+- **Admin panel** (`/admin`) — dashboard, events CRUD, entries & waiting list management, members (approve/suspend/role/handicap), scoring & results publishing with corrections, Order of Merit configuration + manual adjustments, golf clubs/courses, partners, site content, settings.
+- **Database** — full relational schema with Row Level Security, handicap history, Order of Merit calculation (configurable points table, best-N-results dropping, major multipliers, manual adjustments), audit log. See `supabase/migrations`.
+
+## First-time setup
+
+### 1. Create a Supabase project
+
+Create a project at [supabase.com](https://supabase.com), then from **Project Settings → API** copy the Project URL and anon public key into `.env.local` (copy `.env.local.example` as a starting point):
+
+```
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Until real credentials are set, the app runs with placeholder values and every page renders with graceful empty states (no crashes) — useful for reviewing layout/design before the database is wired up.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 2. Run the database migrations
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+In the Supabase SQL Editor, run these files **in order**:
 
-## Learn More
+1. `supabase/migrations/001_schema.sql` — tables & enums
+2. `supabase/migrations/002_functions.sql` — triggers, handicap workflow, results publishing, Order of Merit calculation
+3. `supabase/migrations/003_rls.sql` — Row Level Security policies
+4. `supabase/migrations/004_views.sql` — public-safe views (player directory with privacy masking, event capacity, next event, latest results)
 
-To learn more about Next.js, take a look at the following resources:
+Then run `supabase/seed/seed.sql` to load the golf clubs, the **TP Tour 2026/27** season and its 7 scheduled events (Yas Links, The Els Club, Dubai Hills, Saadiyat ×2, The Montgomerie, Yas Links), plus starter homepage content. Unknown details (times, prices, formats, capacity, sponsors) are left as `TBC`/`null` on purpose, editable from **Admin → Events**.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### 3. Create your first Super Admin
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Register a normal account through `/register`, then in the Supabase SQL Editor run:
 
-## Deploy on Vercel
+```sql
+update member_profiles set role = 'super_admin', status = 'approved' where email = 'you@example.com';
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+You can now sign in and manage the platform from `/admin`.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### 4. Run the app
+
+```bash
+npm install
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000).
+
+## Notes for what's next
+
+- **Payments**: handled manually by design — admins mark each entry Paid / Unpaid / Complimentary from Admin → Entries. No online checkout is planned.
+- **Email**: `notifications` rows are created for key events (approval, entry confirmed, waiting list promoted, results published, handicap updated) with a `channel` and `status` column — connect Resend (or similar) to actually send them.
+- **WhatsApp / push**: `notifications.channel` already supports `whatsapp` and `push` as values, ready for a future sender.
+- **Tee sheets**: entries already carry `tee_time` / `starting_hole` / `group_number` columns, ready for a future tee-time publishing UI.
