@@ -29,11 +29,13 @@ export async function registerMember(input: RegisterInput): Promise<{ error?: st
   }
 
   const supabase = await createClient();
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
 
   const { error } = await supabase.auth.signUp({
     email: input.email,
     password: input.password,
     options: {
+      emailRedirectTo: `${siteUrl}/confirm-email`,
       data: {
         first_name: input.firstName,
         last_name: input.lastName,
