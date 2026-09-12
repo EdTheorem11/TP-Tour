@@ -74,6 +74,7 @@ export interface MemberProfile {
   avatar_url: string | null;
   show_company_publicly: boolean;
   show_job_title_publicly: boolean;
+  show_contact_publicly: boolean;
   approved_at: string | null;
   created_at: string;
   updated_at: string;
@@ -241,6 +242,8 @@ export interface PlayerDirectoryEntry {
   company: string | null;
   job_title: string | null;
   home_golf_club: string | null;
+  mobile: string | null;
+  email: string | null;
   tour_rank: number | null;
   oom_points: number | null;
 }

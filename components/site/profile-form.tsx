@@ -31,6 +31,7 @@ export function ProfileForm({ profile }: { profile: MemberProfile }) {
   const [linkedinUrl, setLinkedinUrl] = useState(profile.linkedin_url ?? "");
   const [showCompany, setShowCompany] = useState(profile.show_company_publicly);
   const [showJobTitle, setShowJobTitle] = useState(profile.show_job_title_publicly);
+  const [showContact, setShowContact] = useState(profile.show_contact_publicly);
 
   const [newHandicap, setNewHandicap] = useState("");
   const [handicapReason, setHandicapReason] = useState("");
@@ -52,6 +53,7 @@ export function ProfileForm({ profile }: { profile: MemberProfile }) {
       linkedinUrl,
       showCompanyPublicly: showCompany,
       showJobTitlePublicly: showJobTitle,
+      showContactPublicly: showContact,
     });
     setSaving(false);
     setMessage(result.error ?? "Profile updated.");
@@ -201,6 +203,10 @@ export function ProfileForm({ profile }: { profile: MemberProfile }) {
           <label className="flex items-center gap-3 text-sm text-tp-offwhite/70">
             <input type="checkbox" checked={showJobTitle} onChange={(e) => setShowJobTitle(e.target.checked)} />
             Show my job title to other members
+          </label>
+          <label className="flex items-center gap-3 text-sm text-tp-offwhite/70">
+            <input type="checkbox" checked={showContact} onChange={(e) => setShowContact(e.target.checked)} />
+            Show my mobile &amp; email to other members (off by default)
           </label>
         </div>
 

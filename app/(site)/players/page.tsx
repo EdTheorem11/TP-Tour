@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Phone, Mail } from "lucide-react";
 import { Container } from "@/components/ui/container";
 import { LinkButton } from "@/components/ui/button";
 import { getCurrentProfile } from "@/lib/data/current-user";
@@ -74,12 +75,11 @@ export default async function PlayersPage({
         ) : (
           <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {players.map((p) => (
-              <Link
+              <div
                 key={p.id}
-                href={`/players/${p.id}`}
                 className="border border-white/10 bg-tp-dark p-6 transition-colors hover:border-tp-gold/50"
               >
-                <div className="flex items-center gap-4">
+                <Link href={`/players/${p.id}`} className="flex items-center gap-4">
                   <span
                     className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-tp-green/25 bg-cover bg-center font-heading text-lg font-bold text-tp-green-light"
                     style={p.avatar_url ? { backgroundImage: `url(${p.avatar_url})` } : undefined}
@@ -92,13 +92,37 @@ export default async function PlayersPage({
                     </p>
                     <p className="truncate text-sm text-tp-offwhite/50">{tbc(p.company)}</p>
                   </div>
-                </div>
+                </Link>
+
                 <div className="mt-4 flex flex-wrap gap-x-5 gap-y-1 text-xs text-tp-offwhite/50">
                   <span>Hcp {formatHandicap(p.current_handicap)}</span>
                   {p.tour_rank && <span>Rank #{p.tour_rank}</span>}
                   {p.industry && <span>{p.industry}</span>}
                 </div>
-              </Link>
+
+                {(p.mobile || p.email) && (
+                  <div className="mt-4 flex gap-4 border-t border-white/10 pt-4">
+                    {p.mobile && (
+                      <a
+                        href={`tel:${p.mobile}`}
+                        className="flex items-center gap-1.5 text-xs text-tp-offwhite/60 hover:text-tp-gold"
+                        aria-label={`Call ${p.first_name}`}
+                      >
+                        <Phone size={14} /> Call
+                      </a>
+                    )}
+                    {p.email && (
+                      <a
+                        href={`mailto:${p.email}`}
+                        className="flex items-center gap-1.5 text-xs text-tp-offwhite/60 hover:text-tp-gold"
+                        aria-label={`Email ${p.first_name}`}
+                      >
+                        <Mail size={14} /> Email
+                      </a>
+                    )}
+                  </div>
+                )}
+              </div>
             ))}
           </div>
         )}

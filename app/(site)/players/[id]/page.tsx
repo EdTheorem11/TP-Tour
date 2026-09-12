@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Phone, Mail } from "lucide-react";
 import { Container } from "@/components/ui/container";
 import { getPlayerByIdPublic, getPlayerSeasonResults, getPlayerOomRow, getCurrentSeason } from "@/lib/data/site";
 import { formatHandicap, formatEventDateLong, tbc } from "@/lib/format";
@@ -72,6 +73,20 @@ export default async function PlayerProfilePage({ params }: { params: Promise<{ 
               {player.company && ` · ${player.company}`}
               {player.industry && ` · ${player.industry}`}
             </p>
+            {(player.mobile || player.email) && (
+              <div className="mt-3 flex flex-wrap gap-5">
+                {player.mobile && (
+                  <a href={`tel:${player.mobile}`} className="flex items-center gap-1.5 text-sm text-tp-offwhite/70 hover:text-tp-gold">
+                    <Phone size={15} /> {player.mobile}
+                  </a>
+                )}
+                {player.email && (
+                  <a href={`mailto:${player.email}`} className="flex items-center gap-1.5 text-sm text-tp-offwhite/70 hover:text-tp-gold">
+                    <Mail size={15} /> {player.email}
+                  </a>
+                )}
+              </div>
+            )}
           </div>
         </div>
 

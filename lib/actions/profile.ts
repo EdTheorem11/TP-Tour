@@ -16,6 +16,7 @@ export interface ProfileUpdateInput {
   linkedinUrl?: string;
   showCompanyPublicly: boolean;
   showJobTitlePublicly: boolean;
+  showContactPublicly: boolean;
 }
 
 export async function updateMyProfile(input: ProfileUpdateInput): Promise<{ error?: string }> {
@@ -42,6 +43,7 @@ export async function updateMyProfile(input: ProfileUpdateInput): Promise<{ erro
       linkedin_url: input.linkedinUrl ?? null,
       show_company_publicly: input.showCompanyPublicly,
       show_job_title_publicly: input.showJobTitlePublicly,
+      show_contact_publicly: input.showContactPublicly,
     })
     .eq("id", user.id);
 
