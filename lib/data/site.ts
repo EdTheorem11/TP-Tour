@@ -291,6 +291,18 @@ export async function getMySeasonEntries(memberId: string, seasonId: string) {
   }, []);
 }
 
+export async function getSeasonStats(seasonId: string): Promise<{ eventsCount: number; coursesCount: number }> {
+  return safe(async () => {
+    const supabase = await createClient();
+    const { data, count } = await supabase
+      .from("events")
+      .select("golf_club_id", { count: "exact" })
+      .eq("season_id", seasonId);
+    const distinctClubs = new Set((data ?? []).map((e) => e.golf_club_id).filter(Boolean));
+    return { eventsCount: count ?? 0, coursesCount: distinctClubs.size };
+  }, { eventsCount: 0, coursesCount: 0 });
+}
+
 export async function getSiteContent<T = Record<string, unknown>>(key: string): Promise<T | null> {
   return safe(async () => {
     const supabase = await createClient();

@@ -17,6 +17,7 @@ import {
   getEventResults,
   getPartners,
   getSiteContent,
+  getSeasonStats,
 } from "@/lib/data/site";
 import { getCurrentProfile } from "@/lib/data/current-user";
 
@@ -25,18 +26,18 @@ export default async function HomePage() {
   const profile = await getCurrentProfile();
   const isLoggedIn = !!profile;
 
-  const [nextEvent, scheduleEvents, standings, latestEvent, partners, hero, about, stats] = await Promise.all([
-    getNextEvent(),
-    season ? getSeasonEvents(season.id) : Promise.resolve([]),
-    isLoggedIn && season ? getOrderOfMerit(season.id, 5) : Promise.resolve([]),
-    getLatestCompletedEvent(),
-    getPartners(),
-    getSiteContent<{ eyebrow: string; heading: string; subheading: string }>("homepage_hero"),
-    getSiteContent<{ headline: string; body: string }>("about_copy"),
-    getSiteContent<{ members: string; tour_events: string; premium_courses: string; tour_champions: string }>(
-      "homepage_stats",
-    ),
-  ]);
+  const [nextEvent, scheduleEvents, standings, latestEvent, partners, hero, about, stats, seasonStats] =
+    await Promise.all([
+      getNextEvent(),
+      season ? getSeasonEvents(season.id) : Promise.resolve([]),
+      isLoggedIn && season ? getOrderOfMerit(season.id, 5) : Promise.resolve([]),
+      getLatestCompletedEvent(),
+      getPartners(),
+      getSiteContent<{ eyebrow: string; heading: string; subheading: string }>("homepage_hero"),
+      getSiteContent<{ headline: string; body: string }>("about_copy"),
+      getSiteContent<{ members: string; tour_champions: string }>("homepage_stats"),
+      season ? getSeasonStats(season.id) : Promise.resolve({ eventsCount: 0, coursesCount: 0 }),
+    ]);
 
   const capacity = nextEvent ? await getEventCapacity(nextEvent.id) : null;
   const results = isLoggedIn && latestEvent ? await getEventResults(latestEvent.id) : [];
@@ -56,7 +57,7 @@ export default async function HomePage() {
       <PlayMoreGolf />
       <OomPreview standings={standings} isLoggedIn={isLoggedIn} />
       <LatestResults event={latestEvent} results={results} isLoggedIn={isLoggedIn} />
-      <AboutStats about={about} stats={stats} />
+      <AboutStats about={about} stats={stats} eventsCount={seasonStats.eventsCount} coursesCount={seasonStats.coursesCount} />
       <PartnersStrip partners={partners} />
       <JoinCta />
     </>

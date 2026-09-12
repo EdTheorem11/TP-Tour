@@ -8,16 +8,24 @@ interface AboutCopy {
 
 interface Stats {
   members?: string;
-  tour_events?: string;
-  premium_courses?: string;
   tour_champions?: string;
 }
 
-export function AboutStats({ about, stats }: { about: AboutCopy | null; stats: Stats | null }) {
+export function AboutStats({
+  about,
+  stats,
+  eventsCount,
+  coursesCount,
+}: {
+  about: AboutCopy | null;
+  stats: Stats | null;
+  eventsCount: number;
+  coursesCount: number;
+}) {
   const items = [
     { value: stats?.members ?? "250+", label: "Members" },
-    { value: stats?.tour_events ?? "7", label: "Tour Events" },
-    { value: stats?.premium_courses ?? "6", label: "Premium Courses" },
+    { value: String(eventsCount), label: "Tour Events" },
+    { value: String(coursesCount), label: "Premium Courses" },
     { value: stats?.tour_champions ?? "1", label: "Tour Champion" },
   ];
 

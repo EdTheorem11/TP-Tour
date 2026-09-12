@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { updateSiteContentValue } from "@/lib/actions/admin-content";
 
 interface Hero { eyebrow?: string; heading?: string; subheading?: string }
-interface Stats { members?: string; tour_events?: string; premium_courses?: string; tour_champions?: string }
+interface Stats { members?: string; tour_champions?: string }
 interface About { headline?: string; body?: string }
 interface Social { linkedin?: string; instagram?: string }
 interface Contact { email?: string; whatsapp?: string }
@@ -22,8 +22,6 @@ async function saveStats(formData: FormData) {
   "use server";
   await updateSiteContentValue("homepage_stats", {
     members: String(formData.get("members") ?? ""),
-    tour_events: String(formData.get("tour_events") ?? ""),
-    premium_courses: String(formData.get("premium_courses") ?? ""),
     tour_champions: String(formData.get("tour_champions") ?? ""),
   });
 }
@@ -74,10 +72,11 @@ export default async function AdminContentPage() {
 
       <form action={saveStats} className="space-y-4 border-t border-white/10 pt-10">
         <h2 className="font-heading text-lg font-bold uppercase text-tp-offwhite">Homepage Statistics</h2>
+        <p className="text-xs text-tp-offwhite/40">
+          Tour Events and Premium Courses are calculated automatically from the current season&rsquo;s schedule.
+        </p>
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Members"><input name="members" defaultValue={stats.members} className={inputClass} /></Field>
-          <Field label="Tour Events"><input name="tour_events" defaultValue={stats.tour_events} className={inputClass} /></Field>
-          <Field label="Premium Courses"><input name="premium_courses" defaultValue={stats.premium_courses} className={inputClass} /></Field>
           <Field label="Tour Champions"><input name="tour_champions" defaultValue={stats.tour_champions} className={inputClass} /></Field>
         </div>
         <Button type="submit" variant="outline" size="sm">Save Statistics</Button>
