@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { Container } from "@/components/ui/container";
 import { LinkButton } from "@/components/ui/button";
 
@@ -14,6 +15,14 @@ export function Hero({
 
   return (
     <section className="relative flex min-h-[92vh] items-center overflow-hidden bg-tp-black">
+      <Image
+        src="/hero.png"
+        alt="TP Tour — golf at sunrise with the Dubai skyline"
+        fill
+        priority
+        className="object-cover"
+      />
+      <div className="absolute inset-0 bg-tp-black/55" />
       <div
         className="absolute inset-0"
         style={{
@@ -21,14 +30,6 @@ export function Hero({
             "radial-gradient(ellipse 80% 60% at 50% -10%, rgba(31,122,85,0.35), transparent 60%), radial-gradient(ellipse 60% 50% at 90% 100%, rgba(195,164,109,0.18), transparent 60%)",
         }}
       />
-      <svg className="absolute inset-0 h-full w-full opacity-[0.07]" aria-hidden>
-        <defs>
-          <pattern id="grid" width="64" height="64" patternUnits="userSpaceOnUse">
-            <path d="M 64 0 L 0 0 0 64" fill="none" stroke="#F4F1E9" strokeWidth="0.5" />
-          </pattern>
-        </defs>
-        <rect width="100%" height="100%" fill="url(#grid)" />
-      </svg>
       <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-tp-black to-transparent" />
 
       <Container className="relative z-10 py-32">
