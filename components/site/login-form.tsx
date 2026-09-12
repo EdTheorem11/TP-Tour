@@ -45,9 +45,14 @@ export function LoginForm() {
         />
       </div>
       <div>
-        <label className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.1em] text-tp-offwhite/60">
-          Password
-        </label>
+        <div className="mb-1.5 flex items-center justify-between">
+          <label className="text-xs font-semibold uppercase tracking-[0.1em] text-tp-offwhite/60">
+            Password
+          </label>
+          <a href="/forgot-password" className="text-xs text-tp-offwhite/50 hover:text-tp-gold">
+            Forgot password?
+          </a>
+        </div>
         <input
           type="password"
           required
