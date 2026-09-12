@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { Container } from "@/components/ui/container";
+import { MemberGate } from "@/components/site/member-gate";
 import { getCurrentSeason, getCompletedEvents } from "@/lib/data/site";
+import { getCurrentProfile } from "@/lib/data/current-user";
 import { formatEventDateLong, tbc } from "@/lib/format";
 import type { Metadata } from "next";
 
@@ -10,6 +12,9 @@ export const metadata: Metadata = {
 };
 
 export default async function ResultsPage() {
+  const profile = await getCurrentProfile();
+  if (!profile) return <MemberGate title="Tour Results" next="/results" />;
+
   const season = await getCurrentSeason();
   const events = await getCompletedEvents(season?.id);
 

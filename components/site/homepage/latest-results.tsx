@@ -5,7 +5,15 @@ import { formatEventDateLong } from "@/lib/format";
 
 const ORDINALS = ["1st", "2nd", "3rd"];
 
-export function LatestResults({ event, results }: { event: TourEvent | null; results: EventResult[] }) {
+export function LatestResults({
+  event,
+  results,
+  isLoggedIn,
+}: {
+  event: TourEvent | null;
+  results: EventResult[];
+  isLoggedIn: boolean;
+}) {
   if (!event) {
     return (
       <section className="py-20 lg:py-28">
@@ -25,7 +33,19 @@ export function LatestResults({ event, results }: { event: TourEvent | null; res
         </h2>
         <p className="mt-2 text-tp-offwhite/50">{formatEventDateLong(event.event_date)}</p>
 
-        {results.length === 0 ? (
+        {!isLoggedIn ? (
+          <div className="mt-8 border border-white/10 bg-tp-dark p-10 text-center">
+            <p className="text-tp-offwhite/60">Results are visible to TP Tour members.</p>
+            <div className="mt-5 flex justify-center gap-3">
+              <LinkButton href="/login" variant="outline" size="sm">
+                Login
+              </LinkButton>
+              <LinkButton href="/register" variant="gold" size="sm">
+                Join TP Tour
+              </LinkButton>
+            </div>
+          </div>
+        ) : results.length === 0 ? (
           <p className="mt-8 text-tp-offwhite/50">Results are being finalised.</p>
         ) : (
           <div className="mt-8 grid gap-4 sm:grid-cols-3">
@@ -47,11 +67,13 @@ export function LatestResults({ event, results }: { event: TourEvent | null; res
           </div>
         )}
 
-        <div className="mt-8">
-          <LinkButton href={`/results/${event.slug}`} variant="outline" size="sm">
-            Full Results
-          </LinkButton>
-        </div>
+        {isLoggedIn && (
+          <div className="mt-8">
+            <LinkButton href={`/results/${event.slug}`} variant="outline" size="sm">
+              Full Results
+            </LinkButton>
+          </div>
+        )}
       </Container>
     </section>
   );

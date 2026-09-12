@@ -5,7 +5,7 @@ import type { OrderOfMeritPoint } from "@/lib/types";
 import { formatHandicap, movementIndicator } from "@/lib/format";
 import { clsx } from "clsx";
 
-export function OomPreview({ standings }: { standings: OrderOfMeritPoint[] }) {
+export function OomPreview({ standings, isLoggedIn }: { standings: OrderOfMeritPoint[]; isLoggedIn: boolean }) {
   return (
     <section className="border-y border-white/10 bg-tp-dark py-20 lg:py-28">
       <Container>
@@ -16,12 +16,26 @@ export function OomPreview({ standings }: { standings: OrderOfMeritPoint[] }) {
               The Race to Become TP Tour Champion
             </h2>
           </div>
-          <LinkButton href="/order-of-merit" variant="outline" size="sm">
-            View Full Standings
-          </LinkButton>
+          {isLoggedIn && (
+            <LinkButton href="/order-of-merit" variant="outline" size="sm">
+              View Full Standings
+            </LinkButton>
+          )}
         </div>
 
-        {standings.length === 0 ? (
+        {!isLoggedIn ? (
+          <div className="border border-white/10 bg-tp-black p-10 text-center">
+            <p className="text-tp-offwhite/60">Standings are visible to TP Tour members.</p>
+            <div className="mt-5 flex justify-center gap-3">
+              <LinkButton href="/login" variant="outline" size="sm">
+                Login
+              </LinkButton>
+              <LinkButton href="/register" variant="gold" size="sm">
+                Join TP Tour
+              </LinkButton>
+            </div>
+          </div>
+        ) : standings.length === 0 ? (
           <p className="text-tp-offwhite/50">Standings will appear once the season is underway.</p>
         ) : (
           <div className="overflow-x-auto">

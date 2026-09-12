@@ -17,14 +17,17 @@ import {
   getPartners,
   getSiteContent,
 } from "@/lib/data/site";
+import { getCurrentProfile } from "@/lib/data/current-user";
 
 export default async function HomePage() {
   const season = await getCurrentSeason();
+  const profile = await getCurrentProfile();
+  const isLoggedIn = !!profile;
 
   const [nextEvent, scheduleEvents, standings, latestEvent, partners, hero, about, stats] = await Promise.all([
     getNextEvent(),
     season ? getSeasonEvents(season.id) : Promise.resolve([]),
-    season ? getOrderOfMerit(season.id, 5) : Promise.resolve([]),
+    isLoggedIn && season ? getOrderOfMerit(season.id, 5) : Promise.resolve([]),
     getLatestCompletedEvent(),
     getPartners(),
     getSiteContent<{ eyebrow: string; heading: string; subheading: string }>("homepage_hero"),
@@ -35,7 +38,7 @@ export default async function HomePage() {
   ]);
 
   const capacity = nextEvent ? await getEventCapacity(nextEvent.id) : null;
-  const results = latestEvent ? await getEventResults(latestEvent.id) : [];
+  const results = isLoggedIn && latestEvent ? await getEventResults(latestEvent.id) : [];
 
   return (
     <>
@@ -49,8 +52,8 @@ export default async function HomePage() {
       />
       <NextOnTour event={nextEvent} capacity={capacity} />
       {scheduleEvents.length > 0 && <ScheduleStrip events={scheduleEvents} seasonName={season?.name ?? ""} />}
-      <OomPreview standings={standings} />
-      <LatestResults event={latestEvent} results={results} />
+      <OomPreview standings={standings} isLoggedIn={isLoggedIn} />
+      <LatestResults event={latestEvent} results={results} isLoggedIn={isLoggedIn} />
       <AboutStats about={about} stats={stats} />
       <PartnersStrip partners={partners} />
       <JoinCta />

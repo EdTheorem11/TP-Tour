@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { clsx } from "clsx";
 import { Container } from "@/components/ui/container";
+import { MemberGate } from "@/components/site/member-gate";
 import { getAllSeasons, getCurrentSeason, getSeasonByName, getOrderOfMerit } from "@/lib/data/site";
+import { getCurrentProfile } from "@/lib/data/current-user";
 import { formatHandicap, movementIndicator } from "@/lib/format";
 import type { Metadata } from "next";
 
@@ -16,6 +18,9 @@ export default async function OrderOfMeritPage({
   searchParams: Promise<{ season?: string }>;
 }) {
   const params = await searchParams;
+  const profile = await getCurrentProfile();
+  if (!profile) return <MemberGate title="Order of Merit" next="/order-of-merit" />;
+
   const seasons = await getAllSeasons();
   const season = params.season ? await getSeasonByName(params.season) : await getCurrentSeason();
   const standings = season ? await getOrderOfMerit(season.id) : [];

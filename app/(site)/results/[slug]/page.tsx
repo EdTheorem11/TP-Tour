@@ -2,7 +2,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { clsx } from "clsx";
 import { Container } from "@/components/ui/container";
+import { MemberGate } from "@/components/site/member-gate";
 import { getEventBySlug, getEventResults } from "@/lib/data/site";
+import { getCurrentProfile } from "@/lib/data/current-user";
 import { formatEventDateLong, formatHandicap, tbc } from "@/lib/format";
 import type { Metadata } from "next";
 
@@ -14,6 +16,9 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 export default async function EventResultsPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
+  const profile = await getCurrentProfile();
+  if (!profile) return <MemberGate title="Tour Results" next={`/results/${slug}`} />;
+
   const event = await getEventBySlug(slug);
   if (!event) notFound();
 

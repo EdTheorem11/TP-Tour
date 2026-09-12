@@ -9,15 +9,22 @@ import { Menu, X } from "lucide-react";
 import { Container } from "@/components/ui/container";
 import { LinkButton } from "@/components/ui/button";
 
-const links = [
-  { href: "/", label: "Home" },
-  { href: "/tour-schedule", label: "Tour Schedule" },
-  { href: "/order-of-merit", label: "Order of Merit" },
-  { href: "/results", label: "Results" },
-  { href: "/players", label: "Players" },
-  { href: "/about", label: "About" },
-  { href: "/partners", label: "Partners" },
-];
+function getLinks(isLoggedIn: boolean) {
+  if (isLoggedIn) {
+    return [
+      { href: "/tour-schedule", label: "Tour Schedule" },
+      { href: "/order-of-merit", label: "Order of Merit" },
+      { href: "/results", label: "Results" },
+      { href: "/players", label: "Players" },
+      { href: "/about", label: "About" },
+      { href: "/partners", label: "Partners" },
+    ];
+  }
+  return [
+    { href: "/tour-schedule", label: "Sign Up to Join" },
+    { href: "/about", label: "About" },
+  ];
+}
 
 export function Nav({
   isLoggedIn,
@@ -45,6 +52,8 @@ export function Nav({
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  const links = getLinks(isLoggedIn);
+
   return (
     <header
       className={clsx(
@@ -58,7 +67,7 @@ export function Nav({
         </Link>
 
         <nav className="hidden items-center gap-8 lg:flex">
-          {links.slice(1).map((link) => (
+          {links.map((link) => (
             <Link
               key={link.href}
               href={link.href}
