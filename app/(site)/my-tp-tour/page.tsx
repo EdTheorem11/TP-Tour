@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Container } from "@/components/ui/container";
 import { LinkButton } from "@/components/ui/button";
+import { InviteShare } from "@/components/site/invite-share";
 import { getCurrentProfile } from "@/lib/data/current-user";
 import { getCurrentSeason, getPlayerOomRow, getMyNextEntry } from "@/lib/data/site";
 import { formatHandicap, formatEventDateLong, tbc } from "@/lib/format";
@@ -125,6 +126,10 @@ export default async function MyTpTourPage() {
               )}
             </ul>
           </div>
+        </div>
+
+        <div className="mt-6">
+          <InviteShare />
         </div>
       </Container>
     </section>
