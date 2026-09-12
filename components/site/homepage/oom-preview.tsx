@@ -6,6 +6,31 @@ import { formatHandicap, movementIndicator } from "@/lib/format";
 import { clsx } from "clsx";
 
 export function OomPreview({ standings, isLoggedIn }: { standings: OrderOfMeritPoint[]; isLoggedIn: boolean }) {
+  if (!isLoggedIn) {
+    return (
+      <section className="border-y border-white/10 bg-tp-dark py-20 text-center lg:py-28">
+        <Container className="max-w-2xl">
+          <p className="text-xs font-semibold uppercase tracking-[0.35em] text-tp-gold">Order of Merit</p>
+          <h2 className="mt-4 font-heading text-balance text-3xl font-bold uppercase leading-tight text-tp-offwhite sm:text-4xl">
+            Got What It Takes to Win the Season Order of Merit?
+          </h2>
+          <p className="mt-5 text-balance text-tp-offwhite/60">
+            Every event counts toward the standings. Join TP Tour to track the rankings, chase the points, and find
+            out where you stand against the rest of the tour.
+          </p>
+          <div className="mt-8 flex flex-wrap justify-center gap-3">
+            <LinkButton href="/register" variant="gold">
+              Join TP Tour
+            </LinkButton>
+            <LinkButton href="/login" variant="outline">
+              Login
+            </LinkButton>
+          </div>
+        </Container>
+      </section>
+    );
+  }
+
   return (
     <section className="border-y border-white/10 bg-tp-dark py-20 lg:py-28">
       <Container>
@@ -16,26 +41,12 @@ export function OomPreview({ standings, isLoggedIn }: { standings: OrderOfMeritP
               The Race to Become TP Tour Champion
             </h2>
           </div>
-          {isLoggedIn && (
-            <LinkButton href="/order-of-merit" variant="outline" size="sm">
-              View Full Standings
-            </LinkButton>
-          )}
+          <LinkButton href="/order-of-merit" variant="outline" size="sm">
+            View Full Standings
+          </LinkButton>
         </div>
 
-        {!isLoggedIn ? (
-          <div className="border border-white/10 bg-tp-black p-10 text-center">
-            <p className="text-tp-offwhite/60">Standings are visible to TP Tour members.</p>
-            <div className="mt-5 flex justify-center gap-3">
-              <LinkButton href="/login" variant="outline" size="sm">
-                Login
-              </LinkButton>
-              <LinkButton href="/register" variant="gold" size="sm">
-                Join TP Tour
-              </LinkButton>
-            </div>
-          </div>
-        ) : standings.length === 0 ? (
+        {standings.length === 0 ? (
           <p className="text-tp-offwhite/50">Standings will appear once the season is underway.</p>
         ) : (
           <div className="overflow-x-auto">
