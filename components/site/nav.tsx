@@ -8,6 +8,8 @@ import Image from "next/image";
 import { Menu, X } from "lucide-react";
 import { Container } from "@/components/ui/container";
 import { LinkButton } from "@/components/ui/button";
+import { MyTpTourMenu } from "@/components/site/my-tp-tour-menu";
+import { logoutMember } from "@/lib/actions/auth";
 
 function getLinks(isLoggedIn: boolean) {
   if (isLoggedIn) {
@@ -30,10 +32,14 @@ export function Nav({
   isLoggedIn,
   firstName,
   avatarUrl,
+  memberId,
+  isAdmin,
 }: {
   isLoggedIn: boolean;
   firstName?: string | null;
   avatarUrl?: string | null;
+  memberId?: string;
+  isAdmin?: boolean;
 }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
@@ -83,18 +89,7 @@ export function Nav({
 
         <div className="hidden items-center gap-4 lg:flex">
           {isLoggedIn ? (
-            <Link
-              href="/my-tp-tour"
-              className="flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.12em] text-tp-offwhite hover:text-tp-gold"
-            >
-              <span
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-tp-green/30 bg-cover bg-center text-[11px] font-bold text-tp-green-light"
-                style={avatarUrl ? { backgroundImage: `url(${avatarUrl})` } : undefined}
-              >
-                {!avatarUrl && (firstName?.[0]?.toUpperCase() ?? "M")}
-              </span>
-              My TP Tour
-            </Link>
+            <MyTpTourMenu firstName={firstName} avatarUrl={avatarUrl} memberId={memberId} isAdmin={!!isAdmin} />
           ) : (
             <>
               <Link
@@ -134,20 +129,46 @@ export function Nav({
                 {link.label}
               </Link>
             ))}
-            <div className="mt-4 flex flex-col gap-3 border-t border-white/10 pt-4">
+            <div className="mt-4 flex flex-col gap-1 border-t border-white/10 pt-4">
               {isLoggedIn ? (
-                <LinkButton href="/my-tp-tour" variant="gold">
-                  My TP Tour
-                </LinkButton>
-              ) : (
                 <>
+                  <p className="py-2 text-[10px] font-semibold uppercase tracking-[0.15em] text-tp-offwhite/40">
+                    My TP Tour
+                  </p>
+                  <Link href="/my-tp-tour" className="py-2.5 text-sm font-semibold uppercase tracking-[0.1em] text-tp-offwhite/80">
+                    Dashboard
+                  </Link>
+                  <Link href="/my-tp-tour/results" className="py-2.5 text-sm font-semibold uppercase tracking-[0.1em] text-tp-offwhite/80">
+                    My Results
+                  </Link>
+                  <Link href="/my-tp-tour/profile" className="py-2.5 text-sm font-semibold uppercase tracking-[0.1em] text-tp-offwhite/80">
+                    My Profile &amp; Handicap
+                  </Link>
+                  {memberId && (
+                    <Link href={`/players/${memberId}`} className="py-2.5 text-sm font-semibold uppercase tracking-[0.1em] text-tp-offwhite/80">
+                      View My Public Profile
+                    </Link>
+                  )}
+                  {isAdmin && (
+                    <Link href="/admin" className="py-2.5 text-sm font-semibold uppercase tracking-[0.1em] text-tp-gold">
+                      Admin Panel
+                    </Link>
+                  )}
+                  <form action={logoutMember} className="mt-2 border-t border-white/10 pt-3">
+                    <button className="py-2.5 text-left text-sm font-semibold uppercase tracking-[0.1em] text-red-400">
+                      Logout
+                    </button>
+                  </form>
+                </>
+              ) : (
+                <div className="flex flex-col gap-3">
                   <LinkButton href="/login" variant="outline">
                     Login
                   </LinkButton>
                   <LinkButton href="/register" variant="gold">
                     Join the Tour
                   </LinkButton>
-                </>
+                </div>
               )}
             </div>
           </Container>

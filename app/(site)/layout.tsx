@@ -7,7 +7,13 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
 
   return (
     <>
-      <Nav isLoggedIn={!!profile} firstName={profile?.first_name} avatarUrl={profile?.avatar_url} />
+      <Nav
+        isLoggedIn={!!profile}
+        firstName={profile?.first_name}
+        avatarUrl={profile?.avatar_url}
+        memberId={profile?.id}
+        isAdmin={!!profile && ["admin", "super_admin"].includes(profile.role)}
+      />
       <main className="flex-1">{children}</main>
       <Footer />
     </>
