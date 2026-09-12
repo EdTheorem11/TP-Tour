@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { sendHandicapUpdatedEmail } from "@/lib/email";
 
 export interface ProfileUpdateInput {
   firstName: string;
@@ -120,6 +121,11 @@ export async function submitMyHandicapChange(newHandicap: number, reason: string
   });
 
   if (error) return { error: error.message };
+
+  const { data: profile } = await supabase.from("member_profiles").select("email, first_name, current_handicap").eq("id", user.id).single();
+  if (profile && Number(profile.current_handicap) === newHandicap) {
+    await sendHandicapUpdatedEmail(profile.email, profile.first_name, newHandicap);
+  }
 
   revalidatePath("/my-tp-tour");
   revalidatePath("/my-tp-tour/profile");

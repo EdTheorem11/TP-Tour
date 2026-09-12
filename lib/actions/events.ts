@@ -2,6 +2,8 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { sendEventEntryConfirmedEmail, sendWaitingListConfirmedEmail } from "@/lib/email";
+import { formatEventDateLong } from "@/lib/format";
 
 export async function enterEvent(eventSlug: string, eventId: string): Promise<{ error?: string; success?: boolean }> {
   const supabase = await createClient();
@@ -13,7 +15,7 @@ export async function enterEvent(eventSlug: string, eventId: string): Promise<{ 
 
   const { data: profile } = await supabase
     .from("member_profiles")
-    .select("status, current_handicap")
+    .select("email, first_name, status, current_handicap")
     .eq("id", user.id)
     .single();
 
@@ -23,7 +25,7 @@ export async function enterEvent(eventSlug: string, eventId: string): Promise<{ 
 
   const { data: event } = await supabase
     .from("events")
-    .select("member_price")
+    .select("name, event_date, member_price")
     .eq("id", eventId)
     .single();
 
@@ -39,6 +41,10 @@ export async function enterEvent(eventSlug: string, eventId: string): Promise<{ 
   });
 
   if (error) return { error: error.code === "23505" ? "You're already entered in this event." : error.message };
+
+  if (event) {
+    await sendEventEntryConfirmedEmail(profile.email, profile.first_name, event.name, formatEventDateLong(event.event_date), eventSlug);
+  }
 
   revalidatePath(`/events/${eventSlug}`);
   revalidatePath("/my-tp-tour");
@@ -59,6 +65,12 @@ export async function joinEventWaitingList(eventSlug: string, eventId: string): 
   });
 
   if (error) return { error: error.code === "23505" ? "You're already on the waiting list." : error.message };
+
+  const [{ data: profile }, { data: event }] = await Promise.all([
+    supabase.from("member_profiles").select("email, first_name").eq("id", user.id).single(),
+    supabase.from("events").select("name").eq("id", eventId).single(),
+  ]);
+  if (profile && event) await sendWaitingListConfirmedEmail(profile.email, profile.first_name, event.name, eventSlug);
 
   revalidatePath(`/events/${eventSlug}`);
   revalidatePath("/my-tp-tour");

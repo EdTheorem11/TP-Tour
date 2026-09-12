@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import type { MemberStatus, UserRole } from "@/lib/types";
+import { sendMembershipApprovedEmail, sendMembershipRejectedEmail, sendHandicapUpdatedEmail } from "@/lib/email";
 
 async function requireAdmin() {
   const supabase = await createClient();
@@ -34,6 +35,14 @@ export async function setMemberStatus(memberId: string, status: MemberStatus, re
   });
 
   await supabase.from("admin_audit_log").insert({ admin_id: adminId, action: `set_status_${status}`, entity_type: "member_profiles", entity_id: memberId });
+
+  if (status === "approved" || status === "rejected") {
+    const { data: member } = await supabase.from("member_profiles").select("email, first_name").eq("id", memberId).single();
+    if (member) {
+      if (status === "approved") await sendMembershipApprovedEmail(member.email, member.first_name);
+      else await sendMembershipRejectedEmail(member.email, member.first_name, reason);
+    }
+  }
 
   revalidatePath("/admin/members");
   revalidatePath(`/admin/members/${memberId}`);
@@ -69,6 +78,10 @@ export async function adminAdjustHandicap(memberId: string, newHandicap: number,
     p_changed_by: adminId,
   });
   if (error) throw new Error(error.message);
+
+  const { data: member } = await supabase.from("member_profiles").select("email, first_name").eq("id", memberId).single();
+  if (member) await sendHandicapUpdatedEmail(member.email, member.first_name, newHandicap);
+
   revalidatePath(`/admin/members/${memberId}`);
 }
 
@@ -76,6 +89,13 @@ export async function approveHandicapChange(memberId: string, historyId: string)
   const { supabase, adminId } = await requireAdmin();
   const { error } = await supabase.rpc("approve_handicap_change", { p_history_id: historyId, p_admin_id: adminId });
   if (error) throw new Error(error.message);
+
+  const [{ data: member }, { data: history }] = await Promise.all([
+    supabase.from("member_profiles").select("email, first_name").eq("id", memberId).single(),
+    supabase.from("handicap_history").select("new_handicap").eq("id", historyId).single(),
+  ]);
+  if (member && history) await sendHandicapUpdatedEmail(member.email, member.first_name, history.new_handicap);
+
   revalidatePath(`/admin/members/${memberId}`);
 }
 

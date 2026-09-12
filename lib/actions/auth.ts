@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import { sendWelcomeEmail } from "@/lib/email";
 
 export interface RegisterInput {
   firstName: string;
@@ -53,6 +54,8 @@ export async function registerMember(input: RegisterInput): Promise<{ error?: st
   });
 
   if (error) return { error: error.message };
+
+  await sendWelcomeEmail(input.email, input.firstName);
 
   redirect("/register/success");
 }

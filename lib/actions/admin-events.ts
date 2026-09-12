@@ -3,6 +3,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { sendEventEntryConfirmedEmail, sendWaitingListPromotedEmail } from "@/lib/email";
+import { formatEventDateLong } from "@/lib/format";
 
 function slugify(input: string): string {
   return input
@@ -153,7 +155,7 @@ export async function addEntryByEmail(eventId: string, formData: FormData) {
   const email = str(formData, "email");
   if (!email) throw new Error("Email is required");
 
-  const { data: member } = await supabase.from("member_profiles").select("id, current_handicap").eq("email", email).single();
+  const { data: member } = await supabase.from("member_profiles").select("id, email, first_name, current_handicap").eq("email", email).single();
   if (!member) redirect(`/admin/entries/${eventId}?error=${encodeURIComponent("No member found with that email.")}`);
 
   const { error } = await supabase.from("event_entries").insert({
@@ -169,6 +171,12 @@ export async function addEntryByEmail(eventId: string, formData: FormData) {
   }
 
   await supabase.from("admin_audit_log").insert({ admin_id: adminId, action: "add_entry", entity_type: "event_entries", entity_id: eventId });
+
+  const { data: event } = await supabase.from("events").select("name, event_date, slug").eq("id", eventId).single();
+  if (event) {
+    await sendEventEntryConfirmedEmail(member.email, member.first_name, event.name, formatEventDateLong(event.event_date), event.slug);
+  }
+
   revalidatePath(`/admin/entries/${eventId}`);
   redirect(`/admin/entries/${eventId}?added=1`);
 }
@@ -194,8 +202,20 @@ export async function updateEntryPayment(eventId: string, entryId: string, statu
 
 export async function promoteWaitingListEntry(eventId: string, waitingListId: string) {
   const { supabase, adminId } = await requireAdmin();
+
+  const { data: waiting } = await supabase.from("waiting_list").select("member_id").eq("id", waitingListId).single();
+
   const { error } = await supabase.rpc("promote_from_waiting_list", { p_waiting_list_id: waitingListId, p_admin_id: adminId });
   if (error) throw new Error(error.message);
+
+  if (waiting) {
+    const [{ data: member }, { data: event }] = await Promise.all([
+      supabase.from("member_profiles").select("email, first_name").eq("id", waiting.member_id).single(),
+      supabase.from("events").select("name, slug").eq("id", eventId).single(),
+    ]);
+    if (member && event) await sendWaitingListPromotedEmail(member.email, member.first_name, event.name, event.slug);
+  }
+
   revalidatePath(`/admin/entries/${eventId}`);
 }
 
