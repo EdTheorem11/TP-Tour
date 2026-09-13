@@ -57,9 +57,26 @@ export async function registerMember(input: RegisterInput): Promise<{ error?: st
 
   if (error) return { error: error.message };
 
-  await sendWelcomeEmail(input.email, input.firstName);
-
   redirect("/register/success");
+}
+
+// Called from the confirm-email page once the user has actually verified
+// their address — not at signup time, since they may never click the link.
+export async function sendWelcomeEmailForConfirmedUser(): Promise<{ error?: string }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user?.email) return { error: "Not signed in." };
+
+  const { data: profile } = await supabase
+    .from("member_profiles")
+    .select("first_name")
+    .eq("id", user.id)
+    .single();
+
+  await sendWelcomeEmail(user.email, profile?.first_name ?? "there");
+  return {};
 }
 
 export async function loginMember(email: string, password: string): Promise<{ error?: string }> {

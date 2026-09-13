@@ -1,14 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { sendWelcomeEmailForConfirmedUser } from "@/lib/actions/auth";
 
 type Status = "checking" | "confirmed" | "invalid";
 
 export function ConfirmEmail() {
   const router = useRouter();
   const [status, setStatus] = useState<Status>("checking");
+  const welcomeSent = useRef(false);
 
   useEffect(() => {
     const supabase = createClient();
@@ -35,6 +37,12 @@ export function ConfirmEmail() {
 
   useEffect(() => {
     if (status !== "confirmed") return;
+
+    if (!welcomeSent.current) {
+      welcomeSent.current = true;
+      sendWelcomeEmailForConfirmedUser();
+    }
+
     const redirect = setTimeout(() => {
       router.push("/my-tp-tour");
       router.refresh();
