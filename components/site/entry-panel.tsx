@@ -4,7 +4,6 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Button, LinkButton } from "@/components/ui/button";
 import { enterEvent, joinEventWaitingList, withdrawFromEvent } from "@/lib/actions/events";
-import { formatPrice } from "@/lib/format";
 import type { MemberProfile } from "@/lib/types";
 
 type Stage = "idle" | "confirm" | "done";
@@ -14,7 +13,6 @@ export function EntryPanel({
   eventSlug,
   eventName,
   eventDate,
-  memberPrice,
   isLoggedIn,
   profile,
   existingEntry,
@@ -25,7 +23,6 @@ export function EntryPanel({
   eventSlug: string;
   eventName: string;
   eventDate: string;
-  memberPrice: number | null;
   isLoggedIn: boolean;
   profile: MemberProfile | null;
   existingEntry: { id: string; status: string } | null;
@@ -131,10 +128,6 @@ export function EntryPanel({
         <div className="flex justify-between">
           <dt className="text-tp-offwhite/50">Date</dt>
           <dd>{eventDate}</dd>
-        </div>
-        <div className="flex justify-between">
-          <dt className="text-tp-offwhite/50">Price</dt>
-          <dd>{formatPrice(memberPrice)}</dd>
         </div>
       </dl>
 

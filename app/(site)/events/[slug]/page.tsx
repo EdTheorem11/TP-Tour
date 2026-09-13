@@ -15,7 +15,7 @@ import {
 } from "@/lib/data/site";
 import { getCurrentProfile } from "@/lib/data/current-user";
 import { FORMAT_LABELS } from "@/lib/types";
-import { formatEventDateLong, formatPrice, formatHandicap, tbc } from "@/lib/format";
+import { formatEventDateLong, formatHandicap, tbc } from "@/lib/format";
 import type { Metadata } from "next";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
@@ -52,8 +52,6 @@ export default async function EventDetailPage({ params }: { params: Promise<{ sl
     { label: "Arrival Time", value: tbc(event.arrival_time) },
     { label: "First Tee / Shotgun", value: tbc(event.first_tee_time ?? event.shotgun_time) },
     { label: "Format", value: event.format ? FORMAT_LABELS[event.format] : "TBC" },
-    { label: "Member Price", value: formatPrice(event.member_price) },
-    { label: "Guest Price", value: formatPrice(event.guest_price) },
     { label: "Max Players", value: tbc(capacity?.max_players) },
     { label: "Players Entered", value: String(capacity?.players_entered ?? 0) },
     { label: "Spaces Remaining", value: tbc(capacity?.spaces_remaining) },
@@ -197,7 +195,6 @@ export default async function EventDetailPage({ params }: { params: Promise<{ sl
               eventSlug={event.slug}
               eventName={event.name}
               eventDate={formatEventDateLong(event.event_date)}
-              memberPrice={event.member_price}
               isLoggedIn={!!profile}
               profile={profile}
               existingEntry={myEntry}

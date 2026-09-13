@@ -3,7 +3,7 @@ import Image from "next/image";
 import { StatusBadge } from "@/components/ui/status-badge";
 import type { TourEvent, EventCapacity } from "@/lib/types";
 import { FORMAT_LABELS } from "@/lib/types";
-import { formatEventDateLong, formatPrice, tbc } from "@/lib/format";
+import { formatEventDateLong, tbc } from "@/lib/format";
 
 export function EventCard({ event, capacity }: { event: TourEvent; capacity?: EventCapacity | null }) {
   return (
@@ -38,7 +38,6 @@ export function EventCard({ event, capacity }: { event: TourEvent; capacity?: Ev
 
         <div className="mt-4 flex flex-wrap gap-x-5 gap-y-1 text-xs text-tp-offwhite/50">
           <span>{event.format ? FORMAT_LABELS[event.format] : "Format TBC"}</span>
-          <span>{formatPrice(event.member_price)}</span>
         </div>
 
         <div className="mt-auto flex items-center justify-between pt-5 text-xs text-tp-offwhite/50">

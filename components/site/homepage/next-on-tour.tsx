@@ -3,7 +3,7 @@ import { Container } from "@/components/ui/container";
 import { LinkButton } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { FORMAT_LABELS, type TourEvent, type EventCapacity } from "@/lib/types";
-import { formatEventDateLong, formatPrice, tbc } from "@/lib/format";
+import { formatEventDateLong, tbc } from "@/lib/format";
 
 export function NextOnTour({ event, capacity }: { event: TourEvent | null; capacity: EventCapacity | null }) {
   if (!event) {
@@ -23,7 +23,6 @@ export function NextOnTour({ event, capacity }: { event: TourEvent | null; capac
     { label: "Arrival Time", value: tbc(event.arrival_time) },
     { label: "Tee Time", value: tbc(event.first_tee_time ?? event.shotgun_time) },
     { label: "Format", value: event.format ? FORMAT_LABELS[event.format] : "TBC" },
-    { label: "Entry Price", value: formatPrice(event.member_price) },
   ];
 
   return (
