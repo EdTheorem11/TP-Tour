@@ -16,7 +16,7 @@ export function WhosOnTour() {
       <Container className="text-center">
         <p className="text-xs font-semibold uppercase tracking-[0.35em] text-tp-gold">Who&rsquo;s on Tour</p>
         <h2 className="mt-4 font-heading text-balance text-4xl font-bold uppercase leading-tight text-tp-offwhite sm:text-5xl">
-          250+ Members. One Community.
+          280+ Members. One Community.
         </h2>
         <p className="mx-auto mt-5 max-w-2xl text-balance text-lg leading-relaxed text-tp-offwhite/70">
           Founders. Traders. Investors. Brokers. Recruiters. Advisors. FinTech leaders. Crypto professionals.

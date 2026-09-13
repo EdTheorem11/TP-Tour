@@ -23,7 +23,7 @@ export function AboutStats({
   coursesCount: number;
 }) {
   const items = [
-    { value: stats?.members ?? "250+", label: "Members" },
+    { value: stats?.members ?? "280+", label: "Members" },
     { value: String(eventsCount), label: "Tour Events" },
     { value: String(coursesCount), label: "Premium Courses" },
     { value: stats?.tour_champions ?? "1", label: "Tour Champion" },
