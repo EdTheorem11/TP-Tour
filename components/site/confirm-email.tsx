@@ -1,76 +1,52 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { LinkButton } from "@/components/ui/button";
 import { sendWelcomeEmailForConfirmedUser } from "@/lib/actions/auth";
 
-type Status = "checking" | "confirmed" | "invalid";
-
 export function ConfirmEmail() {
-  const router = useRouter();
-  const [status, setStatus] = useState<Status>("checking");
   const welcomeSent = useRef(false);
 
   useEffect(() => {
     const supabase = createClient();
 
+    const trigger = () => {
+      if (welcomeSent.current) return;
+      welcomeSent.current = true;
+      sendWelcomeEmailForConfirmedUser();
+    };
+
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event) => {
-      if (event === "SIGNED_IN") setStatus("confirmed");
+      if (event === "SIGNED_IN") trigger();
     });
 
+    // Covers the case where the session was already established by the
+    // time this component mounted (detectSessionInUrl runs on client init).
     supabase.auth.getSession().then(({ data }) => {
-      if (data.session) setStatus("confirmed");
+      if (data.session) trigger();
     });
 
-    const timeout = setTimeout(() => {
-      setStatus((s) => (s === "checking" ? "invalid" : s));
-    }, 4000);
-
-    return () => {
-      subscription.unsubscribe();
-      clearTimeout(timeout);
-    };
+    return () => subscription.unsubscribe();
   }, []);
 
-  useEffect(() => {
-    if (status !== "confirmed") return;
-
-    if (!welcomeSent.current) {
-      welcomeSent.current = true;
-      sendWelcomeEmailForConfirmedUser();
-    }
-
-    const redirect = setTimeout(() => {
-      router.push("/my-tp-tour");
-      router.refresh();
-    }, 1500);
-    return () => clearTimeout(redirect);
-  }, [status, router]);
-
-  if (status === "checking") {
-    return <p className="mt-10 text-tp-offwhite/50">Confirming your email…</p>;
-  }
-
-  if (status === "invalid") {
-    return (
-      <div className="mt-10 space-y-4">
-        <p className="text-red-400">
-          This confirmation link is invalid or has expired. Try logging in below — if your email still needs
-          confirming, request a new link by registering again.
-        </p>
-        <a href="/login" className="inline-block text-tp-gold hover:underline">
-          Go to Login &rarr;
-        </a>
-      </div>
-    );
-  }
-
+  // By the time this page loads at all, Supabase's own /auth/v1/verify
+  // endpoint has already confirmed the address server-side — an invalid or
+  // expired link shows Supabase's own error page and never reaches here.
+  // Whether *this* browser also picks up a session (it won't if the link
+  // was opened on a different device than the one that registered) doesn't
+  // change that the email is confirmed, so this always shows success.
   return (
-    <div className="mt-10 border border-tp-green/40 bg-tp-green/10 p-6 text-sm text-tp-green-light">
-      Your email is confirmed. Taking you to your TP Tour dashboard&hellip;
+    <div className="mt-10 border border-tp-green/40 bg-tp-green/10 p-6">
+      <p className="font-heading text-lg font-bold uppercase text-tp-green-light">Email Address Confirmed</p>
+      <p className="mt-2 text-sm text-tp-offwhite/70">
+        Your TP Tour account is ready. Log in to enter events and connect with other members.
+      </p>
+      <LinkButton href="/login" variant="gold" size="lg" className="mt-5">
+        Login
+      </LinkButton>
     </div>
   );
 }
