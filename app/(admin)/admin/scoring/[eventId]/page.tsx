@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getEventEntriesAdmin, getEventScoresAdmin, getEventResultsAdmin } from "@/lib/data/admin";
-import { inputClass } from "@/components/admin/form";
+import { Field, inputClass } from "@/components/admin/form";
 import { Button } from "@/components/ui/button";
 import { PublishResultsButton } from "@/components/admin/publish-results-button";
 import { saveEventScores, overrideResultPosition } from "@/lib/actions/admin-scoring";
@@ -142,17 +142,29 @@ export default async function AdminScoringForEventPage({ params }: { params: Pro
                     String(fd.get("reason") ?? ""),
                   );
                 }}
-                className="flex flex-wrap items-center gap-3 border border-white/10 bg-tp-dark px-4 py-3 text-sm"
+                className="border border-white/10 bg-tp-dark px-4 py-4 text-sm"
               >
-                <span className="min-w-[160px] text-tp-offwhite">
+                <p className="text-tp-offwhite">
                   {r.member_profiles?.first_name} {r.member_profiles?.last_name}
                   {r.manually_overridden && <span className="ml-2 text-[10px] uppercase text-tp-gold">Overridden</span>}
-                </span>
-                <input name="position" type="number" defaultValue={r.position} className={inputClass + " w-16"} />
-                <input name="position_display" defaultValue={r.position_display} className={inputClass + " w-20"} />
-                <input name="oom_points" type="number" step="0.1" defaultValue={r.oom_points} className={inputClass + " w-24"} />
-                <input name="reason" placeholder="Reason" className={inputClass + " flex-1 min-w-[140px]"} />
-                <button className="text-xs text-tp-gold hover:underline">Override</button>
+                </p>
+                <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-[6rem_6rem_7rem_1fr_auto] lg:items-end">
+                  <Field label="Position">
+                    <input name="position" type="number" defaultValue={r.position} className={inputClass} />
+                  </Field>
+                  <Field label="Display">
+                    <input name="position_display" defaultValue={r.position_display} className={inputClass} />
+                  </Field>
+                  <Field label="OOM Points">
+                    <input name="oom_points" type="number" step="0.1" defaultValue={r.oom_points} className={inputClass} />
+                  </Field>
+                  <Field label="Reason for Override">
+                    <input name="reason" placeholder="Reason" className={inputClass} />
+                  </Field>
+                  <button className="whitespace-nowrap py-2.5 text-xs font-semibold uppercase tracking-[0.1em] text-tp-gold hover:underline">
+                    Override
+                  </button>
+                </div>
               </form>
             ))}
           </div>
