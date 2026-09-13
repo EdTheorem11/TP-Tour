@@ -86,13 +86,13 @@ export async function recalcOrderOfMerit(seasonId: string) {
 
 export async function createPartner(formData: FormData) {
   const { supabase, adminId } = await requireAdmin();
+  const { count } = await supabase.from("partners").select("id", { count: "exact", head: true });
   const { error } = await supabase.from("partners").insert({
     name: str(formData, "name"),
     logo_url: str(formData, "logo_url"),
     website: str(formData, "website"),
     description: str(formData, "description"),
-    sponsor_level: str(formData, "sponsor_level") ?? "tour_partner",
-    display_order: num(formData, "display_order") ?? 0,
+    display_order: count ?? 0,
   });
   if (error) throw new Error(error.message);
   await supabase.from("admin_audit_log").insert({ admin_id: adminId, action: "create_partner", entity_type: "partners" });
@@ -109,14 +109,24 @@ export async function updatePartner(partnerId: string, formData: FormData) {
       logo_url: str(formData, "logo_url"),
       website: str(formData, "website"),
       description: str(formData, "description"),
-      sponsor_level: str(formData, "sponsor_level") ?? "tour_partner",
-      display_order: num(formData, "display_order") ?? 0,
       active: formData.get("active") === "on",
     })
     .eq("id", partnerId);
   if (error) throw new Error(error.message);
   revalidatePath("/admin/partners");
   revalidatePath("/partners");
+}
+
+export async function reorderPartners(orderedIds: string[]) {
+  const { supabase } = await requireAdmin();
+  const results = await Promise.all(
+    orderedIds.map((id, index) => supabase.from("partners").update({ display_order: index }).eq("id", id)),
+  );
+  const failed = results.find((r) => r.error);
+  if (failed?.error) throw new Error(failed.error.message);
+  revalidatePath("/admin/partners");
+  revalidatePath("/partners");
+  revalidatePath("/");
 }
 
 export async function updateSettings(key: string, value: Record<string, unknown>) {

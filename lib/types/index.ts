@@ -24,7 +24,6 @@ export type WaitingListStatus = "waiting" | "promoted" | "removed";
 export type PaymentStatus = "pending" | "paid" | "refunded" | "complimentary" | "not_required";
 export type HandicapSource = "initial" | "member_submitted" | "admin_adjustment" | "event_recalc";
 export type HandicapChangeStatus = "approved" | "pending";
-export type SponsorLevel = "title_partner" | "official_partner" | "tour_partner" | "event_partner" | "prize_partner";
 
 export const FORMAT_LABELS: Record<CompetitionFormat, string> = {
   individual_stableford: "Individual Stableford",
@@ -44,14 +43,6 @@ export const STATUS_LABELS: Record<EventStatus, string> = {
   sold_out: "Sold Out",
   completed: "Completed",
   cancelled: "Cancelled",
-};
-
-export const SPONSOR_LEVEL_LABELS: Record<SponsorLevel, string> = {
-  title_partner: "Title Partner",
-  official_partner: "Official Partner",
-  tour_partner: "Tour Partner",
-  event_partner: "Event Partner",
-  prize_partner: "Prize Partner",
 };
 
 export interface MemberProfile {
@@ -218,7 +209,6 @@ export interface Partner {
   logo_url: string | null;
   website: string | null;
   description: string | null;
-  sponsor_level: SponsorLevel;
   display_order: number;
   active: boolean;
 }
