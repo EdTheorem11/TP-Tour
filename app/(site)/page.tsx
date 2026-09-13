@@ -5,7 +5,6 @@ import { PlayMoreGolf } from "@/components/site/homepage/play-more-golf";
 import { OomPreview } from "@/components/site/homepage/oom-preview";
 import { LatestResults } from "@/components/site/homepage/latest-results";
 import { AboutStats } from "@/components/site/homepage/about-stats";
-import { WhosOnTour } from "@/components/site/homepage/whos-on-tour";
 import { PartnersStrip } from "@/components/site/homepage/partners-strip";
 import { JoinCta } from "@/components/site/homepage/join-cta";
 import {
@@ -59,7 +58,6 @@ export default async function HomePage() {
       <OomPreview standings={standings} isLoggedIn={isLoggedIn} />
       <LatestResults event={latestEvent} results={results} isLoggedIn={isLoggedIn} />
       <AboutStats about={about} stats={stats} eventsCount={seasonStats.eventsCount} coursesCount={seasonStats.coursesCount} />
-      <WhosOnTour />
       <PartnersStrip partners={partners} />
       <JoinCta />
     </>

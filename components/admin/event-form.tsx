@@ -84,12 +84,6 @@ export function EventForm({
         <Field label="Max Players">
           <input type="number" name="max_players" defaultValue={event?.max_players ?? ""} className={inputClass} />
         </Field>
-        <Field label="Member Price (AED)">
-          <input type="number" step="0.01" name="member_price" defaultValue={event?.member_price ?? ""} className={inputClass} />
-        </Field>
-        <Field label="Guest Price (AED)">
-          <input type="number" step="0.01" name="guest_price" defaultValue={event?.guest_price ?? ""} className={inputClass} />
-        </Field>
         <Field label="Handicap Allowance">
           <input name="handicap_allowance" defaultValue={event?.handicap_allowance ?? ""} className={inputClass} />
         </Field>

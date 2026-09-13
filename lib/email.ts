@@ -165,6 +165,16 @@ export async function sendAnnouncementEmail(to: string, firstName: string, subje
   return send(to, subject, html);
 }
 
+export async function sendPasswordChangedEmail(to: string, firstName: string) {
+  const html = wrapper(
+    `<h1 style="font-size:22px;margin:0 0 16px;">Your password was changed</h1>
+     <p>Hi ${firstName}, this confirms the password on your TP Tour account was just changed.</p>
+     <p style="margin-top:28px;font-size:12px;color:rgba(244,241,233,0.4);">If you didn&rsquo;t make this change, contact us immediately and reset your password again.</p>`,
+    "Your TP Tour password was changed.",
+  );
+  return send(to, "Your TP Tour password was changed", html);
+}
+
 export async function sendHandicapUpdatedEmail(to: string, firstName: string, newHandicap: number) {
   const html = wrapper(
     `<h1 style="font-size:22px;margin:0 0 16px;">Handicap Updated</h1>

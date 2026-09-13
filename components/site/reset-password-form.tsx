@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
+import { sendPasswordChangedEmailForCurrentUser } from "@/lib/actions/auth";
 
 const inputClass =
   "w-full border border-white/15 bg-tp-dark px-4 py-3 text-sm text-tp-offwhite placeholder:text-tp-offwhite/30 focus:border-tp-gold focus:outline-none";
@@ -62,6 +63,8 @@ export function ResetPasswordForm() {
       setError(error.message);
       return;
     }
+
+    sendPasswordChangedEmailForCurrentUser();
 
     router.push("/my-tp-tour");
     router.refresh();

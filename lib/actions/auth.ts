@@ -2,7 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
-import { sendWelcomeEmail } from "@/lib/email";
+import { sendWelcomeEmail, sendPasswordChangedEmail } from "@/lib/email";
 
 export interface RegisterInput {
   firstName: string;
@@ -76,6 +76,25 @@ export async function sendWelcomeEmailForConfirmedUser(): Promise<{ error?: stri
     .single();
 
   await sendWelcomeEmail(user.email, profile?.first_name ?? "there");
+  return {};
+}
+
+// Called from the reset-password page right after supabase.auth.updateUser
+// succeeds, so the member gets a security notice their password changed.
+export async function sendPasswordChangedEmailForCurrentUser(): Promise<{ error?: string }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user?.email) return { error: "Not signed in." };
+
+  const { data: profile } = await supabase
+    .from("member_profiles")
+    .select("first_name")
+    .eq("id", user.id)
+    .single();
+
+  await sendPasswordChangedEmail(user.email, profile?.first_name ?? "there");
   return {};
 }
 
