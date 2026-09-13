@@ -4,6 +4,7 @@ import { getEventEntriesAdmin, getEventScoresAdmin, getEventResultsAdmin } from 
 import { Field, inputClass } from "@/components/admin/form";
 import { Button } from "@/components/ui/button";
 import { PublishResultsButton } from "@/components/admin/publish-results-button";
+import { RecalculateResultsButton } from "@/components/admin/recalculate-results-button";
 import { saveEventScores, overrideResultPosition, bulkUploadScores } from "@/lib/actions/admin-scoring";
 import type { TourEvent } from "@/lib/types";
 
@@ -156,7 +157,16 @@ export default async function AdminScoringForEventPage({
       {confirmedEntries.length > 0 && (
         <div className="mt-8 border-t border-white/10 pt-8">
           {event.results_published ? (
-            <p className="text-sm text-tp-green-light">Results have been published for this event.</p>
+            <div>
+              <p className="text-sm text-tp-green-light">Results have been published for this event.</p>
+              <p className="mt-1 text-xs text-tp-offwhite/40">
+                Changed a score since publishing? Recalculate to push the correction to the public site &mdash; this
+                won&rsquo;t re-notify players.
+              </p>
+              <div className="mt-4">
+                <RecalculateResultsButton eventId={eventId} />
+              </div>
+            </div>
           ) : (
             <PublishResultsButton eventId={eventId} />
           )}

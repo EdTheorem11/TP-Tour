@@ -142,6 +142,21 @@ export async function bulkUploadScores(eventId: string, formData: FormData) {
   redirect(`/admin/scoring/${eventId}?${query.toString()}`);
 }
 
+// Re-runs the same recompute the initial publish does, for after a score
+// correction — without re-sending "results published" emails to everyone.
+export async function recalculateEventResults(eventId: string) {
+  const { supabase, adminId } = await requireAdmin();
+  const { error } = await supabase.rpc("publish_event_results", { p_event_id: eventId, p_admin_id: adminId });
+  if (error) throw new Error(error.message);
+
+  revalidatePath(`/admin/scoring/${eventId}`);
+  revalidatePath("/admin/results");
+  revalidatePath("/admin/order-of-merit");
+  revalidatePath("/results");
+  revalidatePath("/order-of-merit");
+  revalidatePath("/");
+}
+
 export async function publishEventResults(eventId: string) {
   const { supabase, adminId } = await requireAdmin();
   const { error } = await supabase.rpc("publish_event_results", { p_event_id: eventId, p_admin_id: adminId });

@@ -1,11 +1,14 @@
 import { redirect } from "next/navigation";
 import { Container } from "@/components/ui/container";
 import { getCurrentProfile } from "@/lib/data/current-user";
+import { getMyHandicapHistory } from "@/lib/data/site";
 import { ProfileForm } from "@/components/site/profile-form";
 
 export default async function MyProfilePage() {
   const profile = await getCurrentProfile();
   if (!profile) redirect("/login?next=/my-tp-tour/profile");
+
+  const handicapHistory = await getMyHandicapHistory(profile.id);
 
   return (
     <section className="py-16 lg:py-20">
@@ -15,7 +18,7 @@ export default async function MyProfilePage() {
           My Profile
         </h1>
         <div className="mt-12">
-          <ProfileForm profile={profile} />
+          <ProfileForm profile={profile} handicapHistory={handicapHistory} />
         </div>
       </Container>
     </section>

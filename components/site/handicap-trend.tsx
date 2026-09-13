@@ -1,6 +1,9 @@
 import { formatHandicap } from "@/lib/format";
+import type { MyHandicapHistoryEntry } from "@/lib/data/site";
 
-export function HandicapTrend({ history }: { history: Array<{ changed_at: string; new_handicap: number }> }) {
+export function HandicapTrend({ history: allHistory }: { history: MyHandicapHistoryEntry[] }) {
+  const history = allHistory.filter((h) => h.status === "approved");
+
   if (history.length < 2) {
     return <p className="mt-4 text-sm text-tp-offwhite/50">Your handicap trend will appear here once it changes.</p>;
   }

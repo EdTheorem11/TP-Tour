@@ -291,14 +291,22 @@ export async function getPlayerOomRow(seasonId: string, memberId: string): Promi
   }, null);
 }
 
-export async function getMyHandicapHistory(memberId: string): Promise<Array<{ changed_at: string; new_handicap: number }>> {
+export interface MyHandicapHistoryEntry {
+  id: string;
+  old_handicap: number | null;
+  new_handicap: number;
+  changed_at: string;
+  reason: string | null;
+  status: string;
+}
+
+export async function getMyHandicapHistory(memberId: string): Promise<MyHandicapHistoryEntry[]> {
   return safe(async () => {
     const supabase = await createClient();
     const { data } = await supabase
       .from("handicap_history")
-      .select("changed_at, new_handicap")
+      .select("id, old_handicap, new_handicap, changed_at, reason, status")
       .eq("member_id", memberId)
-      .eq("status", "approved")
       .order("changed_at", { ascending: true });
     return data ?? [];
   }, []);
