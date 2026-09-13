@@ -63,10 +63,6 @@ export async function updateSeasonOomConfig(seasonId: string, formData: FormData
       oom_major_multiplier: num(formData, "oom_major_multiplier") ?? 2,
       oom_best_results_count: num(formData, "oom_best_results_count"),
       oom_attendance_points: num(formData, "oom_attendance_points") ?? 0,
-      oom_nearest_pin_bonus: num(formData, "oom_nearest_pin_bonus") ?? 0,
-      oom_longest_drive_bonus: num(formData, "oom_longest_drive_bonus") ?? 0,
-      oom_other_bonus_label: str(formData, "oom_other_bonus_label"),
-      oom_other_bonus_points: num(formData, "oom_other_bonus_points"),
     })
     .eq("id", seasonId);
   if (error) throw new Error(error.message);

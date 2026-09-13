@@ -83,18 +83,6 @@ export default async function AdminOrderOfMeritPage({ searchParams }: { searchPa
                 <Field label="Attendance Points">
                   <input type="number" step="0.1" name="oom_attendance_points" defaultValue={season.oom_attendance_points} className={inputClass} />
                 </Field>
-                <Field label="Nearest Pin Bonus">
-                  <input type="number" step="0.1" name="oom_nearest_pin_bonus" defaultValue={season.oom_nearest_pin_bonus} className={inputClass} />
-                </Field>
-                <Field label="Longest Drive Bonus">
-                  <input type="number" step="0.1" name="oom_longest_drive_bonus" defaultValue={season.oom_longest_drive_bonus} className={inputClass} />
-                </Field>
-                <Field label="Other Bonus Label">
-                  <input name="oom_other_bonus_label" defaultValue={season.oom_other_bonus_label ?? ""} className={inputClass} />
-                </Field>
-                <Field label="Other Bonus Points">
-                  <input type="number" step="0.1" name="oom_other_bonus_points" defaultValue={season.oom_other_bonus_points ?? ""} className={inputClass} />
-                </Field>
               </div>
 
               <Button type="submit" variant="gold" size="sm">Save Configuration</Button>

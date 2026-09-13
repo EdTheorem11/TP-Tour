@@ -111,10 +111,6 @@ export interface Season {
   oom_major_multiplier: number;
   oom_best_results_count: number | null;
   oom_attendance_points: number;
-  oom_nearest_pin_bonus: number;
-  oom_longest_drive_bonus: number;
-  oom_other_bonus_label: string | null;
-  oom_other_bonus_points: number | null;
 }
 
 export interface TourEvent {
