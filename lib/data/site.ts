@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
+import { SPONSOR_LEVEL_LABELS } from "@/lib/types";
 import type {
   TourEvent,
   Season,
@@ -9,6 +10,8 @@ import type {
   EventCapacity,
   EventPhoto,
 } from "@/lib/types";
+
+const SPONSOR_TIER_ORDER = Object.keys(SPONSOR_LEVEL_LABELS);
 
 async function safe<T>(fn: () => Promise<T>, fallback: T): Promise<T> {
   if (!isSupabaseConfigured()) return fallback;
@@ -189,6 +192,9 @@ export async function getPartners(): Promise<Partner[]> {
       .from("partners")
       .select("*")
       .eq("active", true)
+      // sponsor_level is a Postgres enum declared title_partner first, so
+      // ordering by it directly ranks by tier, not alphabetically.
+      .order("sponsor_level", { ascending: true })
       .order("display_order", { ascending: true });
     return (data as Partner[]) ?? [];
   }, []);
@@ -241,7 +247,10 @@ export async function getPartnersForEvent(eventId: string): Promise<Partner[]> {
       .from("event_partners")
       .select("partners(*)")
       .eq("event_id", eventId);
-    return ((data as unknown as Array<{ partners: Partner }>) ?? []).map((r) => r.partners);
+    const partners = ((data as unknown as Array<{ partners: Partner }>) ?? []).map((r) => r.partners);
+    return partners.sort(
+      (a, b) => SPONSOR_TIER_ORDER.indexOf(a.sponsor_level) - SPONSOR_TIER_ORDER.indexOf(b.sponsor_level),
+    );
   }, []);
 }
 

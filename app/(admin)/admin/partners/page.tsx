@@ -33,6 +33,9 @@ export default async function AdminPartnersPage() {
           <details key={p.id} className="border border-white/10 bg-tp-dark p-6">
             <summary className="cursor-pointer font-heading text-lg font-bold uppercase text-tp-offwhite">
               {p.name} <span className="ml-3 text-xs font-normal text-tp-offwhite/40">{SPONSOR_LEVEL_LABELS[p.sponsor_level]}</span>
+              {!p.active && (
+                <span className="ml-3 text-xs font-normal uppercase tracking-[0.08em] text-red-400">Inactive &mdash; hidden from site</span>
+              )}
             </summary>
             <form action={updatePartner.bind(null, p.id)} className="mt-4 grid gap-4 sm:grid-cols-2">
               <Field label="Name"><input name="name" defaultValue={p.name} className={inputClass} /></Field>
