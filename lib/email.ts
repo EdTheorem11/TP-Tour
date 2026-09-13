@@ -2,7 +2,7 @@ import { Resend } from "resend";
 import { formatHandicap } from "@/lib/format";
 
 const FROM = process.env.RESEND_FROM_EMAIL || "TP Tour <onboarding@resend.dev>";
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://tptour.ae";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://tptourgolf.com";
 
 function isEmailConfigured(): boolean {
   return !!process.env.RESEND_API_KEY;
@@ -31,9 +31,7 @@ function wrapper(bodyHtml: string, previewText: string): string {
           <table role="presentation" width="100%" style="max-width:520px;">
             <tr>
               <td style="padding:0 4px 24px;">
-                <span style="font-size:20px;font-weight:bold;letter-spacing:3px;color:#F4F1E9;text-transform:uppercase;">
-                  TP <span style="color:#C3A46D;">TOUR</span>
-                </span>
+                <img src="${SITE_URL}/logo.png" alt="TP Tour" width="150" height="28" style="display:block;width:150px;height:28px;border:0;" />
               </td>
             </tr>
             <tr>
