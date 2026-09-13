@@ -23,6 +23,9 @@ export function tbc(value: string | number | null | undefined): string {
 
 export function formatHandicap(value: number | null | undefined): string {
   if (value === null || value === undefined) return "—";
+  // A negative handicap is a "plus" handicap in golf — shown with a leading
+  // "+", not "-" (e.g. -2.5 is written as "+2.5").
+  if (value < 0) return `+${Math.abs(value).toFixed(1)}`;
   return value.toFixed(1);
 }
 

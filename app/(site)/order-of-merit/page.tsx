@@ -52,17 +52,26 @@ export default async function OrderOfMeritPage({
         {standings.length === 0 ? (
           <p className="mt-16 text-center text-tp-offwhite/50">Standings will appear once the season is underway.</p>
         ) : (
-          <div className="mt-10 overflow-x-auto">
-            <table className="w-full min-w-[760px] border-collapse text-left">
+          <div className="mt-10 overflow-x-auto border border-white/10 bg-tp-dark">
+            <table className="w-full min-w-[720px] table-fixed border-collapse text-left">
+              <colgroup>
+                <col className="w-20" />
+                <col />
+                <col className="w-24" />
+                <col className="w-24" />
+                <col className="w-24" />
+                <col className="w-24" />
+                <col className="w-28" />
+              </colgroup>
               <thead>
                 <tr className="border-b border-white/10 text-[11px] font-semibold uppercase tracking-[0.15em] text-tp-offwhite/40">
-                  <th className="py-3 pr-4">Pos</th>
-                  <th className="py-3 pr-4">Player</th>
-                  <th className="py-3 pr-4">Hcp</th>
-                  <th className="py-3 pr-4">Events</th>
-                  <th className="py-3 pr-4">Wins</th>
-                  <th className="py-3 pr-4">Top 3</th>
-                  <th className="py-3 text-right">Points</th>
+                  <th className="px-5 py-4">Pos</th>
+                  <th className="px-5 py-4">Player</th>
+                  <th className="px-5 py-4">Hcp</th>
+                  <th className="px-5 py-4">Events</th>
+                  <th className="px-5 py-4">Wins</th>
+                  <th className="px-5 py-4">Top 3</th>
+                  <th className="px-5 py-4 text-right">Points</th>
                 </tr>
               </thead>
               <tbody>
@@ -73,37 +82,36 @@ export default async function OrderOfMeritPage({
                     <tr
                       key={row.id}
                       className={clsx(
-                        "border-b border-white/5 transition-colors hover:bg-white/[0.03]",
+                        "border-b border-white/5 transition-colors last:border-b-0 hover:bg-white/[0.03]",
                         top3 && "bg-tp-gold/[0.05]",
                       )}
                     >
-                      <td className="py-4 pr-4">
-                        <span className={clsx("font-heading text-lg font-bold", top3 && "text-tp-gold")}>
+                      <td className="px-5 py-4">
+                        <span className={clsx("font-heading text-lg font-bold", top3 ? "text-tp-gold" : "text-tp-offwhite")}>
                           {row.rank ?? "—"}
                         </span>
-                        {row.previous_rank !== null && (
+                        {row.previous_rank !== null && move.direction !== "same" && (
                           <span
                             className={clsx(
                               "ml-2 text-xs",
                               move.direction === "up" && "text-tp-green-light",
                               move.direction === "down" && "text-red-400",
-                              move.direction === "same" && "text-tp-offwhite/30",
                             )}
                           >
                             {move.symbol}
                           </span>
                         )}
                       </td>
-                      <td className="py-4 pr-4">
+                      <td className="truncate px-5 py-4">
                         <Link href={`/players/${row.member_id}`} className="font-semibold text-tp-offwhite hover:text-tp-gold">
                           {row.member_profiles?.first_name} {row.member_profiles?.last_name}
                         </Link>
                       </td>
-                      <td className="py-4 pr-4 text-tp-offwhite/60">{formatHandicap(row.member_profiles?.current_handicap)}</td>
-                      <td className="py-4 pr-4 text-tp-offwhite/60">{row.events_played}</td>
-                      <td className="py-4 pr-4 text-tp-offwhite/60">{row.wins}</td>
-                      <td className="py-4 pr-4 text-tp-offwhite/60">{row.top3}</td>
-                      <td className="py-4 text-right font-heading text-lg font-bold text-tp-offwhite">{row.counting_points}</td>
+                      <td className="px-5 py-4 text-tp-offwhite/60">{formatHandicap(row.member_profiles?.current_handicap)}</td>
+                      <td className="px-5 py-4 text-tp-offwhite/60">{row.events_played}</td>
+                      <td className="px-5 py-4 text-tp-offwhite/60">{row.wins}</td>
+                      <td className="px-5 py-4 text-tp-offwhite/60">{row.top3}</td>
+                      <td className="px-5 py-4 text-right font-heading text-lg font-bold text-tp-offwhite">{row.counting_points}</td>
                     </tr>
                   );
                 })}
