@@ -3,8 +3,9 @@ import Link from "next/link";
 import { Container } from "@/components/ui/container";
 import { LinkButton } from "@/components/ui/button";
 import { InviteShare } from "@/components/site/invite-share";
+import { HandicapTrend } from "@/components/site/handicap-trend";
 import { getCurrentProfile } from "@/lib/data/current-user";
-import { getCurrentSeason, getPlayerOomRow, getMyNextEntry } from "@/lib/data/site";
+import { getCurrentSeason, getPlayerOomRow, getMyNextEntry, getMyHandicapHistory } from "@/lib/data/site";
 import { formatHandicap, formatEventDateLong, tbc } from "@/lib/format";
 import { FORMAT_LABELS } from "@/lib/types";
 
@@ -13,9 +14,10 @@ export default async function MyTpTourPage() {
   if (!profile) redirect("/login?next=/my-tp-tour");
 
   const season = await getCurrentSeason();
-  const [oom, nextEntry] = await Promise.all([
+  const [oom, nextEntry, handicapHistory] = await Promise.all([
     season ? getPlayerOomRow(season.id, profile.id) : Promise.resolve(null),
     getMyNextEntry(profile.id),
+    getMyHandicapHistory(profile.id),
   ]);
 
   const stats = [
@@ -56,7 +58,7 @@ export default async function MyTpTourPage() {
           ))}
         </div>
 
-        <div className="mt-14 grid gap-6 lg:grid-cols-2">
+        <div className="mt-14 grid gap-6 lg:grid-cols-3">
           <div className="border border-white/10 bg-tp-dark p-8">
             <h2 className="font-heading text-lg font-bold uppercase text-tp-offwhite">My Next Event</h2>
             {nextEvent ? (
@@ -92,6 +94,11 @@ export default async function MyTpTourPage() {
                 </LinkButton>
               </>
             )}
+          </div>
+
+          <div className="border border-white/10 bg-tp-dark p-8">
+            <h2 className="font-heading text-lg font-bold uppercase text-tp-offwhite">Handicap Trend</h2>
+            <HandicapTrend history={handicapHistory} />
           </div>
 
           <div className="border border-white/10 bg-tp-dark p-8">

@@ -31,9 +31,14 @@ export default async function AdminResultsPage() {
                   Manage Scores &amp; Results
                 </Link>
                 {e.results_published && (
-                  <Link href={`/results/${e.slug}`} className="text-tp-offwhite/70 hover:text-tp-gold">
-                    View Public Page
-                  </Link>
+                  <>
+                    <Link href={`/results/${e.slug}`} className="text-tp-offwhite/70 hover:text-tp-gold">
+                      View Public Page
+                    </Link>
+                    <a href={`/api/admin/results/${e.id}/export`} className="text-tp-offwhite/70 hover:text-tp-gold">
+                      Download CSV
+                    </a>
+                  </>
                 )}
               </div>
             </div>

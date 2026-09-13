@@ -36,8 +36,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const pendingCount = pendingMembers.length + pendingHandicaps.length;
 
   return (
-    <div className="flex min-h-screen bg-tp-black text-tp-offwhite">
-      <aside className="hidden w-64 shrink-0 border-r border-white/10 bg-tp-dark p-6 lg:block">
+    <div className="flex min-h-screen bg-tp-black text-tp-offwhite print:block print:bg-white print:text-black">
+      <aside className="hidden w-64 shrink-0 border-r border-white/10 bg-tp-dark p-6 lg:block print:hidden">
         <Link href="/">
           <Image src="/logo.png" alt="TP Tour" width={800} height={150} className="h-7 w-auto" />
         </Link>
@@ -65,8 +65,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         </Link>
       </aside>
 
-      <div className="flex-1">
-        <header className="flex items-center justify-between border-b border-white/10 px-6 py-4 lg:hidden">
+      <div className="flex-1 print:w-full">
+        <header className="flex items-center justify-between border-b border-white/10 px-6 py-4 lg:hidden print:hidden">
           <Link href="/" className="flex items-center gap-2">
             <Image src="/logo.png" alt="TP Tour" width={800} height={150} className="h-6 w-auto" />
             <span className="text-sm font-semibold uppercase tracking-[0.1em] text-tp-offwhite/60">Admin</span>
@@ -81,11 +81,11 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           </Link>
         </header>
         {previewMode && (
-          <div className="border-b border-tp-gold/30 bg-tp-gold/10 px-6 py-2.5 text-center text-xs font-semibold uppercase tracking-[0.1em] text-tp-gold">
+          <div className="border-b border-tp-gold/30 bg-tp-gold/10 px-6 py-2.5 text-center text-xs font-semibold uppercase tracking-[0.1em] text-tp-gold print:hidden">
             Preview Mode &mdash; no Supabase project connected, showing empty data with no login required
           </div>
         )}
-        <main className="p-6 lg:p-10">{children}</main>
+        <main className="p-6 lg:p-10 print:p-0">{children}</main>
       </div>
     </div>
   );

@@ -291,6 +291,19 @@ export async function getPlayerOomRow(seasonId: string, memberId: string): Promi
   }, null);
 }
 
+export async function getMyHandicapHistory(memberId: string): Promise<Array<{ changed_at: string; new_handicap: number }>> {
+  return safe(async () => {
+    const supabase = await createClient();
+    const { data } = await supabase
+      .from("handicap_history")
+      .select("changed_at, new_handicap")
+      .eq("member_id", memberId)
+      .eq("status", "approved")
+      .order("changed_at", { ascending: true });
+    return data ?? [];
+  }, []);
+}
+
 export async function getMyNextEntry(memberId: string) {
   return safe(async () => {
     const supabase = await createClient();

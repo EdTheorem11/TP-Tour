@@ -2,7 +2,9 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { sendResultsPublishedEmail } from "@/lib/email";
+import { parseCsv } from "@/lib/csv";
 
 async function requireAdmin() {
   const supabase = await createClient();
@@ -44,6 +46,81 @@ export async function saveEventScores(eventId: string, formData: FormData) {
   }
 
   revalidatePath(`/admin/scoring/${eventId}`);
+}
+
+export async function bulkUploadScores(eventId: string, formData: FormData) {
+  const { supabase, adminId } = await requireAdmin();
+
+  const file = formData.get("scores_csv");
+  if (!(file instanceof File) || file.size === 0) {
+    redirect(`/admin/scoring/${eventId}?importError=${encodeURIComponent("No file selected.")}`);
+  }
+
+  const text = await file.text();
+  const table = parseCsv(text);
+  if (table.length < 2) {
+    redirect(`/admin/scoring/${eventId}?importError=${encodeURIComponent("CSV has no data rows.")}`);
+  }
+
+  const header = table[0].map((h) => h.trim().toLowerCase());
+  const idx = {
+    email: header.indexOf("email"),
+    handicap: header.indexOf("playing handicap"),
+    gross: header.indexOf("gross"),
+    nett: header.indexOf("nett"),
+    stableford: header.indexOf("stableford"),
+  };
+  if (idx.email === -1) {
+    redirect(`/admin/scoring/${eventId}?importError=${encodeURIComponent('CSV must have an "Email" column.')}`);
+  }
+
+  const dataRows = table.slice(1).filter((r) => r.some((c) => c.trim() !== ""));
+  const emails = dataRows.map((r) => r[idx.email]?.trim().toLowerCase()).filter(Boolean);
+
+  const { data: members } = await supabase.from("member_profiles").select("id, email").in("email", emails);
+  const memberByEmail = new Map((members ?? []).map((m) => [m.email.toLowerCase(), m.id]));
+
+  const num = (v: string | undefined) => (v && v.trim() !== "" ? Number(v) : null);
+
+  const rows: Array<{
+    event_id: string;
+    member_id: string;
+    playing_handicap: number | null;
+    gross_score: number | null;
+    nett_score: number | null;
+    stableford_points: number | null;
+    entered_by: string;
+  }> = [];
+  const skipped: string[] = [];
+
+  for (const r of dataRows) {
+    const email = r[idx.email]?.trim().toLowerCase();
+    const memberId = email ? memberByEmail.get(email) : undefined;
+    if (!memberId) {
+      if (email) skipped.push(email);
+      continue;
+    }
+    rows.push({
+      event_id: eventId,
+      member_id: memberId,
+      playing_handicap: idx.handicap > -1 ? num(r[idx.handicap]) : null,
+      gross_score: idx.gross > -1 ? num(r[idx.gross]) : null,
+      nett_score: idx.nett > -1 ? num(r[idx.nett]) : null,
+      stableford_points: idx.stableford > -1 ? num(r[idx.stableford]) : null,
+      entered_by: adminId,
+    });
+  }
+
+  if (rows.length > 0) {
+    const { error } = await supabase.from("event_scores").upsert(rows, { onConflict: "event_id,member_id" });
+    if (error) throw new Error(error.message);
+  }
+
+  revalidatePath(`/admin/scoring/${eventId}`);
+
+  const query = new URLSearchParams({ imported: String(rows.length) });
+  if (skipped.length > 0) query.set("skipped", skipped.join(", "));
+  redirect(`/admin/scoring/${eventId}?${query.toString()}`);
 }
 
 export async function publishEventResults(eventId: string) {

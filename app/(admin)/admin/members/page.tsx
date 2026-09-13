@@ -16,7 +16,15 @@ export default async function AdminMembersPage({ searchParams }: { searchParams:
 
   return (
     <div>
-      <h1 className="font-heading text-3xl font-bold uppercase text-tp-offwhite">Members</h1>
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <h1 className="font-heading text-3xl font-bold uppercase text-tp-offwhite">Members</h1>
+        <a
+          href="/api/admin/members/export"
+          className="border border-white/15 px-4 py-2 text-xs font-semibold uppercase tracking-[0.1em] text-tp-offwhite/80 hover:border-tp-gold hover:text-tp-gold"
+        >
+          Download CSV
+        </a>
+      </div>
 
       <form action="/admin/members" method="get" className="mt-6 max-w-sm">
         <input name="q" defaultValue={params.q} placeholder="Search members" className={inputClass} />
