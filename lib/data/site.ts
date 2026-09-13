@@ -43,6 +43,20 @@ export async function getAllSeasons(): Promise<Season[]> {
   }, []);
 }
 
+export async function getSeasonChampions(): Promise<Array<{ season: Season; champions: OrderOfMeritPoint[] }>> {
+  return safe(async () => {
+    const seasons = await getAllSeasons();
+    const pastSeasons = seasons.filter((s) => !s.is_current);
+    const results = await Promise.all(
+      pastSeasons.map(async (season) => {
+        const standings = await getOrderOfMerit(season.id);
+        return { season, champions: standings.filter((s) => s.rank === 1) };
+      }),
+    );
+    return results.filter((r) => r.champions.length > 0);
+  }, []);
+}
+
 export async function getNextEvent(): Promise<TourEvent | null> {
   return safe(async () => {
     const supabase = await createClient();

@@ -148,6 +148,16 @@ export async function sendResultsPublishedEmail(to: string, firstName: string, e
   return send(to, `Results Published — ${eventName}`, html);
 }
 
+export async function sendAnnouncementEmail(to: string, firstName: string, subject: string, messageHtml: string) {
+  const html = wrapper(
+    `<h1 style="font-size:22px;margin:0 0 16px;">${subject}</h1>
+     <p>Hi ${firstName},</p>
+     ${messageHtml}`,
+    subject,
+  );
+  return send(to, subject, html);
+}
+
 export async function sendHandicapUpdatedEmail(to: string, firstName: string, newHandicap: number) {
   const html = wrapper(
     `<h1 style="font-size:22px;margin:0 0 16px;">Handicap Updated</h1>

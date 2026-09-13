@@ -13,6 +13,7 @@ const navItems = [
   { href: "/admin/members", label: "Members" },
   { href: "/admin/scoring", label: "Scoring" },
   { href: "/admin/results", label: "Results" },
+  { href: "/admin/announcements", label: "Announcements" },
   { href: "/admin/order-of-merit", label: "Order of Merit" },
   { href: "/admin/golf-clubs", label: "Golf Clubs" },
   { href: "/admin/partners", label: "Partners" },

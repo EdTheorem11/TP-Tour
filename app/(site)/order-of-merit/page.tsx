@@ -2,7 +2,7 @@ import Link from "next/link";
 import { clsx } from "clsx";
 import { Container } from "@/components/ui/container";
 import { MemberGate } from "@/components/site/member-gate";
-import { getAllSeasons, getCurrentSeason, getSeasonByName, getOrderOfMerit } from "@/lib/data/site";
+import { getAllSeasons, getCurrentSeason, getSeasonByName, getOrderOfMerit, getSeasonChampions } from "@/lib/data/site";
 import { getCurrentProfile } from "@/lib/data/current-user";
 import { formatHandicap, movementIndicator } from "@/lib/format";
 import type { Metadata } from "next";
@@ -23,12 +23,17 @@ export default async function OrderOfMeritPage({
 
   const seasons = await getAllSeasons();
   const season = params.season ? await getSeasonByName(params.season) : await getCurrentSeason();
-  const standings = season ? await getOrderOfMerit(season.id) : [];
+  const [standings, pastChampions] = await Promise.all([
+    season ? getOrderOfMerit(season.id) : Promise.resolve([]),
+    getSeasonChampions(),
+  ]);
 
   const rankCounts = new Map<number, number>();
   for (const row of standings) {
     if (row.rank !== null) rankCounts.set(row.rank, (rankCounts.get(row.rank) ?? 0) + 1);
   }
+
+  const champions = season && !season.is_current ? standings.filter((s) => s.rank === 1) : [];
 
   return (
     <section className="py-20 lg:py-28">
@@ -53,6 +58,32 @@ export default async function OrderOfMeritPage({
             </Link>
           ))}
         </div>
+
+        {champions.length > 0 && (
+          <div className="mt-10 border border-tp-gold/40 bg-tp-gold/10 p-8 text-center">
+            <p className="text-xs font-semibold uppercase tracking-[0.35em] text-tp-gold">
+              {champions.length > 1 ? "TP Tour Co-Champions" : "TP Tour Champion"}
+            </p>
+            <h2 className="mt-3 font-heading text-3xl font-bold uppercase text-tp-offwhite sm:text-4xl">
+              {champions.map((c) => `${c.member_profiles?.first_name} ${c.member_profiles?.last_name}`).join(" & ")}
+            </h2>
+            <p className="mt-2 text-tp-offwhite/60">{season?.name} Season</p>
+            <div className="mx-auto mt-6 grid max-w-md grid-cols-3 gap-px overflow-hidden border border-white/10 bg-white/10">
+              <div className="bg-tp-black px-4 py-4">
+                <p className="font-heading text-2xl font-bold text-tp-gold">{champions[0].counting_points}</p>
+                <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.1em] text-tp-offwhite/50">Points</p>
+              </div>
+              <div className="bg-tp-black px-4 py-4">
+                <p className="font-heading text-2xl font-bold text-tp-gold">{champions[0].wins}</p>
+                <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.1em] text-tp-offwhite/50">Wins</p>
+              </div>
+              <div className="bg-tp-black px-4 py-4">
+                <p className="font-heading text-2xl font-bold text-tp-gold">{champions[0].events_played}</p>
+                <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.1em] text-tp-offwhite/50">Events</p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {standings.length === 0 ? (
           <p className="mt-16 text-center text-tp-offwhite/50">Standings will appear once the season is underway.</p>
@@ -123,6 +154,27 @@ export default async function OrderOfMeritPage({
                 })}
               </tbody>
             </table>
+          </div>
+        )}
+
+        {pastChampions.length > 0 && (
+          <div className="mt-14 border-t border-white/10 pt-8">
+            <h2 className="font-heading text-lg font-bold uppercase text-tp-offwhite">Hall of Fame</h2>
+            <ul className="mt-4 divide-y divide-white/10 border-y border-white/10">
+              {pastChampions.map(({ season: s, champions: c }) => (
+                <li key={s.id} className="flex flex-wrap items-center justify-between gap-2 py-3 text-sm">
+                  <Link
+                    href={`/order-of-merit?season=${encodeURIComponent(s.name)}`}
+                    className="font-semibold text-tp-offwhite hover:text-tp-gold"
+                  >
+                    {s.name}
+                  </Link>
+                  <span className="text-tp-offwhite/70">
+                    {c.map((champ) => `${champ.member_profiles?.first_name} ${champ.member_profiles?.last_name}`).join(" & ")}
+                  </span>
+                </li>
+              ))}
+            </ul>
           </div>
         )}
       </Container>
