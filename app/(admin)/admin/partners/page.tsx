@@ -16,7 +16,7 @@ export default async function AdminPartnersPage() {
         <form action={createPartner} className="mt-4 grid gap-4 sm:grid-cols-2">
           <Field label="Name"><input name="name" required className={inputClass} /></Field>
           <Field label="Sponsor Level">
-            <select name="sponsor_level" className={inputClass}>
+            <select name="sponsor_level" defaultValue="tour_partner" className={inputClass}>
               {Object.entries(SPONSOR_LEVEL_LABELS).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
             </select>
           </Field>
