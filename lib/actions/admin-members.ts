@@ -1,7 +1,9 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import type { MemberStatus, UserRole } from "@/lib/types";
 import { sendMembershipApprovedEmail, sendMembershipRejectedEmail, sendHandicapUpdatedEmail } from "@/lib/email";
 
@@ -12,6 +14,13 @@ async function requireAdmin() {
   } = await supabase.auth.getUser();
   if (!user) throw new Error("Not signed in");
   return { supabase, adminId: user.id };
+}
+
+async function requireSuperAdmin() {
+  const { supabase, adminId } = await requireAdmin();
+  const { data: admin } = await supabase.from("member_profiles").select("role").eq("id", adminId).single();
+  if (admin?.role !== "super_admin") throw new Error("Only a super admin can do this.");
+  return { supabase, adminId };
 }
 
 export async function setMemberStatus(memberId: string, status: MemberStatus, reason?: string) {
@@ -123,4 +132,21 @@ export async function updateMemberDetailsAdmin(memberId: string, formData: FormD
   if (error) throw new Error(error.message);
   await supabase.from("admin_audit_log").insert({ admin_id: adminId, action: "edit_member", entity_type: "member_profiles", entity_id: memberId });
   revalidatePath(`/admin/members/${memberId}`);
+}
+
+export async function deleteMember(memberId: string) {
+  const { supabase, adminId } = await requireSuperAdmin();
+  const admin = createAdminClient();
+  if (!admin) throw new Error("Server is missing SUPABASE_SERVICE_ROLE_KEY — cannot delete a member.");
+
+  await supabase.from("admin_audit_log").insert({ admin_id: adminId, action: "delete_member", entity_type: "member_profiles", entity_id: memberId });
+
+  // Deleting the auth user cascades to member_profiles and every table that
+  // references it (event_entries, event_scores, handicap_history, etc.) —
+  // member_profiles.id is a foreign key to auth.users(id) on delete cascade.
+  const { error } = await admin.auth.admin.deleteUser(memberId);
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/admin/members");
+  redirect("/admin/members");
 }

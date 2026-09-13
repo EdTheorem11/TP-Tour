@@ -3,6 +3,7 @@ import { getMemberAdmin, getMemberHandicapHistory } from "@/lib/data/admin";
 import { getCurrentProfile } from "@/lib/data/current-user";
 import { Field, inputClass } from "@/components/admin/form";
 import { Button } from "@/components/ui/button";
+import { ConfirmSubmitButton } from "@/components/admin/confirm-submit-button";
 import {
   approveMember,
   suspendMember,
@@ -11,6 +12,7 @@ import {
   adminAdjustHandicap,
   approveHandicapChange,
   updateMemberDetailsAdmin,
+  deleteMember,
 } from "@/lib/actions/admin-members";
 import { formatHandicap, tbc } from "@/lib/format";
 import { INDUSTRY_OPTIONS } from "@/lib/types";
@@ -157,6 +159,25 @@ export default async function AdminMemberDetailPage({ params }: { params: Promis
           </ul>
         </div>
       </div>
+
+      {isSuperAdmin && (
+        <div className="mt-10 border-t border-red-500/20 pt-8">
+          <h2 className="font-heading text-lg font-bold uppercase text-red-400">Danger Zone</h2>
+          <p className="mt-2 text-sm text-tp-offwhite/50">
+            Permanently deletes this member&rsquo;s account, profile and all their tour history (entries, scores,
+            handicap history). This cannot be undone.
+          </p>
+          <form action={deleteMember.bind(null, id)} className="mt-4">
+            <ConfirmSubmitButton
+              variant="danger"
+              size="sm"
+              confirmText={`Are you sure you want to delete "${member.first_name} ${member.last_name}" from the TP Tour?`}
+            >
+              Delete Member
+            </ConfirmSubmitButton>
+          </form>
+        </div>
+      )}
     </div>
   );
 }

@@ -7,6 +7,7 @@ const variants = {
   gold: "bg-tp-gold text-tp-black hover:bg-tp-gold-light",
   outline: "border border-tp-offwhite/30 text-tp-offwhite hover:border-tp-offwhite hover:bg-tp-offwhite/5",
   ghost: "text-tp-offwhite hover:text-tp-gold",
+  danger: "bg-red-600 text-white hover:bg-red-500",
 };
 
 const sizes = {
