@@ -28,8 +28,10 @@ export async function updateSiteContentValue(key: string, value: Record<string, 
     .upsert({ key, value, updated_by: adminId, updated_at: new Date().toISOString() }, { onConflict: "key" });
   if (error) throw new Error(error.message);
   revalidatePath("/admin/content");
-  revalidatePath("/");
-  revalidatePath("/about");
+  // Content like the footer's WhatsApp link renders on every page under
+  // the (site) layout, not just "/" — revalidate the whole layout tree
+  // rather than one page, or other routes keep showing stale content.
+  revalidatePath("/", "layout");
 }
 
 export async function createSeason(formData: FormData) {
@@ -97,7 +99,8 @@ export async function createPartner(formData: FormData) {
   if (error) throw new Error(error.message);
   await supabase.from("admin_audit_log").insert({ admin_id: adminId, action: "create_partner", entity_type: "partners" });
   revalidatePath("/admin/partners");
-  revalidatePath("/partners");
+  // Partner logos render in the footer on every page, not one route.
+  revalidatePath("/", "layout");
 }
 
 export async function updatePartner(partnerId: string, formData: FormData) {
@@ -114,7 +117,7 @@ export async function updatePartner(partnerId: string, formData: FormData) {
     .eq("id", partnerId);
   if (error) throw new Error(error.message);
   revalidatePath("/admin/partners");
-  revalidatePath("/partners");
+  revalidatePath("/", "layout");
 }
 
 export async function reorderPartners(orderedIds: string[]) {
@@ -125,8 +128,7 @@ export async function reorderPartners(orderedIds: string[]) {
   const failed = results.find((r) => r.error);
   if (failed?.error) throw new Error(failed.error.message);
   revalidatePath("/admin/partners");
-  revalidatePath("/partners");
-  revalidatePath("/");
+  revalidatePath("/", "layout");
 }
 
 export async function updateSettings(key: string, value: Record<string, unknown>) {
