@@ -6,7 +6,9 @@ insert into storage.buckets (id, name, public)
 values ('avatars', 'avatars', true)
 on conflict (id) do nothing;
 
-alter table storage.objects enable row level security;
+-- storage.objects is owned by Supabase's internal supabase_storage_admin
+-- role and already has RLS enabled by default — project owners can't (and
+-- don't need to) toggle it themselves, only add policies to it.
 
 create policy "Public read avatars"
 on storage.objects for select
