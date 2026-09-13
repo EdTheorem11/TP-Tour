@@ -2,7 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Phone, Mail } from "lucide-react";
 import { Container } from "@/components/ui/container";
-import { getPlayerByIdPublic, getPlayerSeasonResults, getPlayerOomRow, getCurrentSeason } from "@/lib/data/site";
+import { HandicapTrend } from "@/components/site/handicap-trend";
+import { getPlayerByIdPublic, getPlayerSeasonResults, getPlayerOomRow, getCurrentSeason, getMyHandicapHistory } from "@/lib/data/site";
 import { formatHandicap, formatEventDateLong, tbc } from "@/lib/format";
 import type { Metadata } from "next";
 
@@ -27,9 +28,10 @@ export default async function PlayerProfilePage({ params }: { params: Promise<{ 
   if (!player) notFound();
 
   const season = await getCurrentSeason();
-  const [results, oom] = await Promise.all([
+  const [results, oom, handicapHistory] = await Promise.all([
     getPlayerSeasonResults(id) as Promise<ResultRow[]>,
     season ? getPlayerOomRow(season.id, id) : Promise.resolve(null),
+    getMyHandicapHistory(id),
   ]);
 
   const stablefordScores = results.map((r) => r.event_scores?.stableford_points).filter((v): v is number => v != null);
@@ -100,6 +102,13 @@ export default async function PlayerProfilePage({ params }: { params: Promise<{ 
             </div>
           ))}
         </div>
+
+        {handicapHistory.filter((h) => h.status === "approved").length >= 2 && (
+          <div className="mt-10 max-w-sm border border-white/10 bg-tp-dark p-6">
+            <h2 className="font-heading text-sm font-bold uppercase text-tp-offwhite">Handicap Trend</h2>
+            <HandicapTrend history={handicapHistory} />
+          </div>
+        )}
 
         <h2 className="mt-14 font-heading text-2xl font-bold uppercase text-tp-offwhite">Season Results</h2>
         {results.length === 0 ? (
