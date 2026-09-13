@@ -100,35 +100,15 @@ export async function Footer() {
                   rel="noreferrer"
                   className="text-sm text-tp-offwhite/70 hover:text-tp-gold"
                 >
-                  Join Community
+                  Join the WhatsApp Community
                 </a>
               ) : isLoggedIn ? (
-                <span className="text-sm text-tp-offwhite/30">Join Community (Coming Soon)</span>
+                <span className="text-sm text-tp-offwhite/30">Join the WhatsApp Community (Coming Soon)</span>
               ) : (
                 <Link href="/register" className="text-sm text-tp-offwhite/70 hover:text-tp-gold">
-                  Join Community <span className="text-tp-offwhite/40">(Members Only — Sign Up)</span>
+                  Join the WhatsApp Community <span className="text-tp-offwhite/40">(Members Only — Sign Up)</span>
                 </Link>
               )}
-            </li>
-            <li>
-              <a
-                href="https://linkedin.com"
-                target="_blank"
-                rel="noreferrer"
-                className="text-sm text-tp-offwhite/70 hover:text-tp-gold"
-              >
-                LinkedIn
-              </a>
-            </li>
-            <li>
-              <a
-                href="https://instagram.com"
-                target="_blank"
-                rel="noreferrer"
-                className="text-sm text-tp-offwhite/70 hover:text-tp-gold"
-              >
-                Instagram
-              </a>
             </li>
           </ul>
         </div>

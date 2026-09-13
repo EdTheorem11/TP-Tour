@@ -72,22 +72,24 @@ export function NextOnTour({ event, capacity }: { event: TourEvent | null; capac
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-px overflow-hidden rounded-sm border border-white/10 bg-white/10 sm:grid-cols-2">
-          {facts.map((fact) => (
-            <div key={fact.label} className="bg-tp-black px-6 py-5">
+        <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/10 shadow-2xl shadow-black/50">
+          <div className="grid grid-cols-2 gap-px">
+            {facts.map((fact) => (
+              <div key={fact.label} className="bg-tp-black/60 px-6 py-5 backdrop-blur-xl">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-tp-offwhite/40">
+                  {fact.label}
+                </p>
+                <p className="mt-1.5 truncate text-lg font-semibold text-tp-offwhite">{fact.value}</p>
+              </div>
+            ))}
+            <div className="col-span-2 bg-tp-black/60 px-6 py-5 backdrop-blur-xl">
               <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-tp-offwhite/40">
-                {fact.label}
+                Spaces Remaining
               </p>
-              <p className="mt-1.5 truncate text-lg font-semibold text-tp-offwhite">{fact.value}</p>
+              <p className="mt-1.5 text-lg font-semibold text-tp-gold">
+                {capacity?.spaces_remaining ?? "TBC"}
+              </p>
             </div>
-          ))}
-          <div className="bg-tp-black px-6 py-5">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-tp-offwhite/40">
-              Spaces Remaining
-            </p>
-            <p className="mt-1.5 text-lg font-semibold text-tp-gold">
-              {capacity?.spaces_remaining ?? "TBC"}
-            </p>
           </div>
         </div>
       </Container>

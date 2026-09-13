@@ -6,7 +6,6 @@ import { updateSiteContentValue } from "@/lib/actions/admin-content";
 interface Hero { eyebrow?: string; heading?: string; subheading?: string }
 interface Stats { members?: string; tour_champions?: string }
 interface About { headline?: string; body?: string }
-interface Social { linkedin?: string; instagram?: string }
 interface Contact { email?: string; whatsapp?: string }
 
 async function saveHero(formData: FormData) {
@@ -34,14 +33,6 @@ async function saveAbout(formData: FormData) {
   });
 }
 
-async function saveSocial(formData: FormData) {
-  "use server";
-  await updateSiteContentValue("social_links", {
-    linkedin: String(formData.get("linkedin") ?? ""),
-    instagram: String(formData.get("instagram") ?? ""),
-  });
-}
-
 async function saveContact(formData: FormData) {
   "use server";
   await updateSiteContentValue("contact_details", {
@@ -55,7 +46,6 @@ export default async function AdminContentPage() {
   const hero = (content.homepage_hero ?? {}) as Hero;
   const stats = (content.homepage_stats ?? {}) as Stats;
   const about = (content.about_copy ?? {}) as About;
-  const social = (content.social_links ?? {}) as Social;
   const contact = (content.contact_details ?? {}) as Contact;
 
   return (
@@ -87,13 +77,6 @@ export default async function AdminContentPage() {
         <Field label="Headline"><input name="headline" defaultValue={about.headline} className={inputClass} /></Field>
         <Field label="Body"><textarea name="body" rows={3} defaultValue={about.body} className={inputClass} /></Field>
         <Button type="submit" variant="outline" size="sm">Save About</Button>
-      </form>
-
-      <form action={saveSocial} className="space-y-4 border-t border-white/10 pt-10">
-        <h2 className="font-heading text-lg font-bold uppercase text-tp-offwhite">Social Links</h2>
-        <Field label="LinkedIn"><input name="linkedin" defaultValue={social.linkedin} className={inputClass} /></Field>
-        <Field label="Instagram"><input name="instagram" defaultValue={social.instagram} className={inputClass} /></Field>
-        <Button type="submit" variant="outline" size="sm">Save Social</Button>
       </form>
 
       <form action={saveContact} className="space-y-4 border-t border-white/10 pt-10">
