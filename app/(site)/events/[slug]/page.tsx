@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Container } from "@/components/ui/container";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -9,6 +10,7 @@ import {
   getEventCapacity,
   getEventEntryList,
   getEventPhotos,
+  getEventResults,
   getMyEventEntry,
   getMyWaitingListEntry,
   getPartnersForEvent,
@@ -40,6 +42,8 @@ export default async function EventDetailPage({ params }: { params: Promise<{ sl
     getEventPhotos(event.id),
     getCurrentProfile(),
   ]);
+
+  const results = event.status === "completed" ? await getEventResults(event.id) : [];
 
   const myEntry = profile ? await getMyEventEntry(event.id, profile.id) : null;
   const myWaitingListEntry = profile && !myEntry ? await getMyWaitingListEntry(event.id, profile.id) : null;
@@ -100,6 +104,57 @@ export default async function EventDetailPage({ params }: { params: Promise<{ sl
                 ))}
               </div>
             </div>
+
+            {event.status === "completed" && (
+              <div className="mt-10">
+                <h2 className="font-heading text-xl font-bold uppercase text-tp-offwhite">Leaderboard</h2>
+                {!profile ? (
+                  <p className="mt-3 text-tp-offwhite/60">
+                    <Link href="/login" className="text-tp-gold hover:underline">Login</Link> or{" "}
+                    <Link href="/register" className="text-tp-gold hover:underline">join TP Tour</Link> to see how
+                    the field finished.
+                  </p>
+                ) : results.length === 0 ? (
+                  <p className="mt-3 text-tp-offwhite/50">Results are being finalised.</p>
+                ) : (
+                  <>
+                    <div className="mt-4 overflow-hidden rounded-2xl border border-white/10 shadow-xl shadow-black/30">
+                      <div className="divide-y divide-white/10 bg-tp-dark">
+                        {results.slice(0, 10).map((r) => (
+                          <div
+                            key={r.id}
+                            className={`flex items-center justify-between gap-4 px-5 py-3.5 ${
+                              r.position === 1 ? "bg-tp-gold/[0.06]" : ""
+                            }`}
+                          >
+                            <div className="flex items-center gap-4">
+                              <span className="w-7 shrink-0 font-heading text-lg font-bold text-tp-offwhite">
+                                {r.position_display}
+                              </span>
+                              <Link
+                                href={`/players/${r.member_id}`}
+                                className="font-semibold text-tp-offwhite hover:text-tp-gold"
+                              >
+                                {r.member_profiles?.first_name} {r.member_profiles?.last_name}
+                              </Link>
+                            </div>
+                            <span className="font-heading text-lg font-bold text-tp-gold">
+                              {tbc(r.event_scores?.stableford_points ?? r.event_scores?.nett_score)} pts
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    <Link
+                      href={`/results/${event.slug}`}
+                      className="mt-4 inline-block text-sm text-tp-gold hover:underline"
+                    >
+                      Full Results &rarr;
+                    </Link>
+                  </>
+                )}
+              </div>
+            )}
 
             {event.description && (
               <div className="mt-10">
