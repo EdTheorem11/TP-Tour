@@ -92,9 +92,12 @@ export default async function PlayerProfilePage({ params }: { params: Promise<{ 
           </div>
         </div>
 
-        <div className="mt-12 grid grid-cols-2 gap-px overflow-hidden border border-white/10 bg-white/10 sm:grid-cols-3 lg:grid-cols-5">
-          {stats.map((s) => (
-            <div key={s.label} className="bg-tp-dark px-6 py-6 text-center">
+        <div className="mt-12 grid grid-cols-2 gap-px overflow-hidden border border-white/10 bg-white/10 sm:grid-cols-3">
+          {stats.map((s, i) => (
+            <div
+              key={s.label}
+              className={`bg-tp-dark px-6 py-6 text-center ${i === stats.length - 1 ? "col-span-2 sm:col-span-1" : ""}`}
+            >
               <p className="font-heading text-3xl font-bold text-tp-gold">{s.value}</p>
               <p className="mt-2 text-[11px] font-semibold uppercase tracking-[0.1em] text-tp-offwhite/50">
                 {s.label}

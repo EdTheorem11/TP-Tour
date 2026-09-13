@@ -85,15 +85,20 @@ export default async function EventDetailPage({ params }: { params: Promise<{ sl
       <section className="py-16 lg:py-20">
         <Container className="grid gap-12 lg:grid-cols-[1.4fr_1fr]">
           <div>
-            <div className="grid grid-cols-2 gap-px overflow-hidden border border-white/10 bg-white/10 sm:grid-cols-3">
-              {facts.map((fact) => (
-                <div key={fact.label} className="bg-tp-dark px-5 py-4">
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-tp-offwhite/40">
-                    {fact.label}
-                  </p>
-                  <p className="mt-1 truncate text-sm font-semibold text-tp-offwhite">{fact.value}</p>
-                </div>
-              ))}
+            <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/10 shadow-xl shadow-black/30">
+              <div className="grid grid-cols-2 gap-px sm:grid-cols-3">
+                {facts.map((fact, i) => (
+                  <div
+                    key={fact.label}
+                    className={`bg-tp-dark px-5 py-4 ${i === facts.length - 1 ? "col-span-full" : ""}`}
+                  >
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-tp-offwhite/40">
+                      {fact.label}
+                    </p>
+                    <p className="mt-1 truncate text-sm font-semibold text-tp-offwhite">{fact.value}</p>
+                  </div>
+                ))}
+              </div>
             </div>
 
             {event.description && (
