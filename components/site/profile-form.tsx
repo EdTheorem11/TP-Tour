@@ -44,23 +44,28 @@ export function ProfileForm({ profile, handicapHistory }: { profile: MemberProfi
     e.preventDefault();
     setSaving(true);
     setMessage(null);
-    const result = await updateMyProfile({
-      firstName,
-      lastName,
-      mobile,
-      company,
-      jobTitle,
-      industry,
-      homeGolfClub,
-      homeCourse,
-      linkedinUrl,
-      showCompanyPublicly: showCompany,
-      showJobTitlePublicly: showJobTitle,
-      showContactPublicly: showContact,
-    });
-    setSaving(false);
-    setMessage(result.error ?? "Profile updated.");
-    router.refresh();
+    try {
+      const result = await updateMyProfile({
+        firstName,
+        lastName,
+        mobile,
+        company,
+        jobTitle,
+        industry,
+        homeGolfClub,
+        homeCourse,
+        linkedinUrl,
+        showCompanyPublicly: showCompany,
+        showJobTitlePublicly: showJobTitle,
+        showContactPublicly: showContact,
+      });
+      setMessage(result.error ?? "Profile updated.");
+      router.refresh();
+    } catch {
+      setMessage("Something went wrong — check your connection and try again.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const onAvatarSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -74,28 +79,39 @@ export function ProfileForm({ profile, handicapHistory }: { profile: MemberProfi
 
     const fd = new FormData();
     fd.set("avatar", file);
-    const result = await uploadMyAvatar(fd);
 
-    setAvatarUploading(false);
-    if (result.error) {
-      setAvatarMessage(result.error);
+    try {
+      const result = await uploadMyAvatar(fd);
+      if (result.error) {
+        setAvatarMessage(result.error);
+        setAvatarUrl(profile.avatar_url ?? null);
+      } else if (result.url) {
+        setAvatarUrl(result.url);
+        router.refresh();
+      }
+    } catch {
+      setAvatarMessage("Upload failed — check your connection and try again with a smaller image.");
       setAvatarUrl(profile.avatar_url ?? null);
-    } else if (result.url) {
-      setAvatarUrl(result.url);
-      router.refresh();
+    } finally {
+      setAvatarUploading(false);
     }
   };
 
   const onRemoveAvatar = async () => {
     setAvatarUploading(true);
     setAvatarMessage(null);
-    const result = await removeMyAvatar();
-    setAvatarUploading(false);
-    if (result.error) {
-      setAvatarMessage(result.error);
-    } else {
-      setAvatarUrl(null);
-      router.refresh();
+    try {
+      const result = await removeMyAvatar();
+      if (result.error) {
+        setAvatarMessage(result.error);
+      } else {
+        setAvatarUrl(null);
+        router.refresh();
+      }
+    } catch {
+      setAvatarMessage("Something went wrong — check your connection and try again.");
+    } finally {
+      setAvatarUploading(false);
     }
   };
 
