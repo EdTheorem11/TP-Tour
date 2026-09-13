@@ -51,41 +51,17 @@ export default async function AdminOrderOfMeritPage({ searchParams }: { searchPa
       {season && (
         <>
           <div className="mt-10 border-t border-white/10 pt-8">
-            <h2 className="font-heading text-lg font-bold uppercase text-tp-offwhite">Points Configuration &mdash; {season.name}</h2>
-            <form action={updateSeasonOomConfig.bind(null, season.id)} className="mt-4 space-y-6">
-              <div>
-                <p className="mb-2 text-xs font-semibold uppercase tracking-[0.1em] text-tp-offwhite/40">Position Points</p>
-                <div className="grid grid-cols-5 gap-3 sm:grid-cols-10">
-                  {Array.from({ length: 10 }, (_, i) => i + 1).map((pos) => (
-                    <div key={pos}>
-                      <label className="mb-1 block text-[10px] text-tp-offwhite/40">{pos}{pos === 1 ? "st" : pos === 2 ? "nd" : pos === 3 ? "rd" : "th"}</label>
-                      <input
-                        type="number"
-                        name={`points_${pos}`}
-                        defaultValue={season.oom_points_table[String(pos)] ?? ""}
-                        className={inputClass}
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="grid gap-5 sm:grid-cols-3">
-                <Field label="Default Points (below table)">
-                  <input type="number" name="oom_default_points" defaultValue={season.oom_default_points} className={inputClass} />
-                </Field>
-                <Field label="Major Bonus Multiplier">
-                  <input type="number" step="0.1" name="oom_major_multiplier" defaultValue={season.oom_major_multiplier} className={inputClass} />
-                </Field>
-                <Field label="Best Results Count (blank = all)">
-                  <input type="number" name="oom_best_results_count" defaultValue={season.oom_best_results_count ?? ""} className={inputClass} />
-                </Field>
-                <Field label="Attendance Points">
-                  <input type="number" step="0.1" name="oom_attendance_points" defaultValue={season.oom_attendance_points} className={inputClass} />
-                </Field>
-              </div>
-
-              <Button type="submit" variant="gold" size="sm">Save Configuration</Button>
+            <h2 className="font-heading text-lg font-bold uppercase text-tp-offwhite">Scoring &mdash; {season.name}</h2>
+            <p className="mt-2 max-w-xl text-sm text-tp-offwhite/50">
+              Order of Merit points are simply each player&rsquo;s Stableford score for the round &mdash; no
+              position-based points table. This just controls how many of their best rounds count toward the
+              season total.
+            </p>
+            <form action={updateSeasonOomConfig.bind(null, season.id)} className="mt-4 max-w-xs">
+              <Field label="Best Results Count (blank = all)">
+                <input type="number" name="oom_best_results_count" defaultValue={season.oom_best_results_count ?? ""} className={inputClass} />
+              </Field>
+              <Button type="submit" variant="gold" size="sm" className="mt-4">Save Configuration</Button>
             </form>
           </div>
 

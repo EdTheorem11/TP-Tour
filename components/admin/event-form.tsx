@@ -101,9 +101,6 @@ export function EventForm({
             ))}
           </select>
         </Field>
-        <Field label="OOM Multiplier">
-          <input type="number" step="0.1" name="oom_multiplier" defaultValue={event?.oom_multiplier ?? 1} className={inputClass} />
-        </Field>
         <Field label="Status">
           <select name="status" defaultValue={event?.status ?? "draft"} className={inputClass}>
             {Object.entries(STATUS_LABELS).map(([key, label]) => (

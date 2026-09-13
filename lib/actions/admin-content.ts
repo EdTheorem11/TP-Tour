@@ -49,20 +49,10 @@ export async function createSeason(formData: FormData) {
 export async function updateSeasonOomConfig(seasonId: string, formData: FormData) {
   const { supabase } = await requireAdmin();
 
-  const pointsTable: Record<string, number> = {};
-  for (let pos = 1; pos <= 20; pos++) {
-    const v = formData.get(`points_${pos}`);
-    if (v && String(v).trim() !== "") pointsTable[String(pos)] = Number(v);
-  }
-
   const { error } = await supabase
     .from("seasons")
     .update({
-      oom_points_table: pointsTable,
-      oom_default_points: num(formData, "oom_default_points") ?? 0,
-      oom_major_multiplier: num(formData, "oom_major_multiplier") ?? 2,
       oom_best_results_count: num(formData, "oom_best_results_count"),
-      oom_attendance_points: num(formData, "oom_attendance_points") ?? 0,
     })
     .eq("id", seasonId);
   if (error) throw new Error(error.message);

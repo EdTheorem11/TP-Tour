@@ -106,11 +106,7 @@ export interface Season {
   start_date: string;
   end_date: string | null;
   is_current: boolean;
-  oom_points_table: Record<string, number>;
-  oom_default_points: number;
-  oom_major_multiplier: number;
   oom_best_results_count: number | null;
-  oom_attendance_points: number;
 }
 
 export interface TourEvent {
@@ -139,7 +135,6 @@ export interface TourEvent {
   course_information: string | null;
   handicap_allowance: string | null;
   oom_eligible: boolean;
-  oom_multiplier: number;
   is_major: boolean;
   sponsor_id: string | null;
   status: EventStatus;
