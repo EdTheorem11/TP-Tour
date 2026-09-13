@@ -1,4 +1,5 @@
 import { Resend } from "resend";
+import { formatHandicap } from "@/lib/format";
 
 const FROM = process.env.RESEND_FROM_EMAIL || "TP Tour <onboarding@resend.dev>";
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://tptour.ae";
@@ -18,30 +19,39 @@ function wrapper(bodyHtml: string, previewText: string): string {
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="supported-color-schemes" content="dark" />
     <title>TP Tour</title>
   </head>
-  <body style="margin:0;padding:0;background:#F4F1E9;font-family:Helvetica,Arial,sans-serif;">
-    <span style="display:none;font-size:1px;color:#F4F1E9;line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;">${previewText}</span>
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F4F1E9;padding:32px 16px;">
+  <body style="margin:0;padding:0;background:#0A0E0D;font-family:Georgia,'Times New Roman',serif;">
+    <span style="display:none;font-size:1px;color:#0A0E0D;line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;">${previewText}</span>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#0A0E0D;padding:40px 16px;">
       <tr>
         <td align="center">
-          <table role="presentation" width="100%" style="max-width:520px;background:#ffffff;border-radius:4px;overflow:hidden;">
+          <table role="presentation" width="100%" style="max-width:520px;">
             <tr>
-              <td style="background:#0A0E0D;padding:28px 32px;">
-                <span style="font-family:Georgia,serif;font-size:20px;font-weight:bold;letter-spacing:2px;color:#F4F1E9;text-transform:uppercase;">
+              <td style="padding:0 4px 24px;">
+                <span style="font-size:20px;font-weight:bold;letter-spacing:3px;color:#F4F1E9;text-transform:uppercase;">
                   TP <span style="color:#C3A46D;">TOUR</span>
                 </span>
               </td>
             </tr>
             <tr>
-              <td style="padding:36px 32px;color:#111715;font-size:15px;line-height:1.6;">
-                ${bodyHtml}
+              <td style="background:#111715;border-top:3px solid #C3A46D;border-radius:2px;">
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                  <tr>
+                    <td style="padding:40px 36px;color:#F4F1E9;font-size:15px;line-height:1.65;font-family:Helvetica,Arial,sans-serif;">
+                      ${bodyHtml}
+                    </td>
+                  </tr>
+                </table>
               </td>
             </tr>
             <tr>
-              <td style="padding:20px 32px;background:#F4F1E9;color:#6b6b6b;font-size:12px;">
-                TP Tour &middot; Golf. Network. Compete. &middot; Dubai, United Arab Emirates<br/>
-                <a href="${SITE_URL}" style="color:#1F7A55;">${SITE_URL.replace(/^https?:\/\//, "")}</a>
+              <td style="padding:28px 8px 0;text-align:center;color:rgba(244,241,233,0.4);font-size:11px;letter-spacing:0.6px;line-height:1.8;font-family:Helvetica,Arial,sans-serif;">
+                TP TOUR &middot; GOLF. NETWORK. COMPETE.<br/>
+                Dubai, United Arab Emirates &middot;
+                <a href="${SITE_URL}" style="color:#C3A46D;text-decoration:none;">${SITE_URL.replace(/^https?:\/\//, "")}</a>
               </td>
             </tr>
           </table>
@@ -53,7 +63,7 @@ function wrapper(bodyHtml: string, previewText: string): string {
 }
 
 function button(label: string, href: string): string {
-  return `<a href="${href}" style="display:inline-block;margin-top:20px;padding:12px 24px;background:#C3A46D;color:#0A0E0D;text-decoration:none;font-weight:bold;font-size:13px;letter-spacing:1px;text-transform:uppercase;border-radius:2px;">${label}</a>`;
+  return `<a href="${href}" style="display:inline-block;margin-top:20px;padding:13px 28px;background:#C3A46D;color:#0A0E0D;text-decoration:none;font-weight:bold;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;border-radius:2px;font-family:Helvetica,Arial,sans-serif;">${label}</a>`;
 }
 
 async function send(to: string, subject: string, html: string): Promise<{ error?: string }> {
@@ -96,7 +106,7 @@ export async function sendMembershipRejectedEmail(to: string, firstName: string,
   const html = wrapper(
     `<h1 style="font-size:22px;margin:0 0 16px;">Application Update</h1>
      <p>Hi ${firstName}, thanks for your interest in TP Tour. Unfortunately we're not able to approve your membership application at this time.</p>
-     ${reason ? `<p style="color:#6b6b6b;">${reason}</p>` : ""}`,
+     ${reason ? `<p style="color:rgba(244,241,233,0.6);">${reason}</p>` : ""}`,
     "An update on your TP Tour application.",
   );
   return send(to, "Your TP Tour application", html);
@@ -161,9 +171,9 @@ export async function sendAnnouncementEmail(to: string, firstName: string, subje
 export async function sendHandicapUpdatedEmail(to: string, firstName: string, newHandicap: number) {
   const html = wrapper(
     `<h1 style="font-size:22px;margin:0 0 16px;">Handicap Updated</h1>
-     <p>Hi ${firstName}, your TP Tour handicap has been updated to <strong>${newHandicap}</strong>.</p>
+     <p>Hi ${firstName}, your TP Tour handicap has been updated to <strong>${formatHandicap(newHandicap)}</strong>.</p>
      ${button("My Profile", `${SITE_URL}/my-tp-tour/profile`)}`,
-    `Your handicap is now ${newHandicap}.`,
+    `Your handicap is now ${formatHandicap(newHandicap)}.`,
   );
   return send(to, "Your TP Tour handicap has been updated", html);
 }
