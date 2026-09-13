@@ -157,17 +157,20 @@ export default async function AdminOrderOfMeritPage({ searchParams }: { searchPa
                   </tr>
                 </thead>
                 <tbody>
-                  {standings.map((s) => (
-                    <tr key={s.id} className="border-b border-white/5">
-                      <td className="py-3 pr-4">{s.rank}</td>
-                      <td className="py-3 pr-4 text-tp-offwhite">{s.member_profiles?.first_name} {s.member_profiles?.last_name}</td>
-                      <td className="py-3 pr-4 text-tp-offwhite/60">{formatHandicap(s.member_profiles?.current_handicap)}</td>
-                      <td className="py-3 pr-4 text-tp-offwhite/60">{s.events_played}</td>
-                      <td className="py-3 pr-4 text-tp-offwhite/60">{s.total_points}</td>
-                      <td className="py-3 pr-4 text-tp-offwhite/40">{s.dropped_points}</td>
-                      <td className="py-3 text-right font-semibold text-tp-gold">{s.counting_points}</td>
-                    </tr>
-                  ))}
+                  {standings.map((s) => {
+                    const isTied = s.rank !== null && standings.filter((r) => r.rank === s.rank).length > 1;
+                    return (
+                      <tr key={s.id} className="border-b border-white/5">
+                        <td className="py-3 pr-4">{s.rank === null ? "—" : isTied ? `T${s.rank}` : s.rank}</td>
+                        <td className="py-3 pr-4 text-tp-offwhite">{s.member_profiles?.first_name} {s.member_profiles?.last_name}</td>
+                        <td className="py-3 pr-4 text-tp-offwhite/60">{formatHandicap(s.member_profiles?.current_handicap)}</td>
+                        <td className="py-3 pr-4 text-tp-offwhite/60">{s.events_played}</td>
+                        <td className="py-3 pr-4 text-tp-offwhite/60">{s.total_points}</td>
+                        <td className="py-3 pr-4 text-tp-offwhite/40">{s.dropped_points}</td>
+                        <td className="py-3 text-right font-semibold text-tp-gold">{s.counting_points}</td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
               {standings.length === 0 && <p className="py-6 text-tp-offwhite/50">No standings yet.</p>}

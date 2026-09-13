@@ -25,6 +25,11 @@ export default async function OrderOfMeritPage({
   const season = params.season ? await getSeasonByName(params.season) : await getCurrentSeason();
   const standings = season ? await getOrderOfMerit(season.id) : [];
 
+  const rankCounts = new Map<number, number>();
+  for (const row of standings) {
+    if (row.rank !== null) rankCounts.set(row.rank, (rankCounts.get(row.rank) ?? 0) + 1);
+  }
+
   return (
     <section className="py-20 lg:py-28">
       <Container>
@@ -78,6 +83,7 @@ export default async function OrderOfMeritPage({
                 {standings.map((row) => {
                   const move = movementIndicator(row.rank, row.previous_rank);
                   const top3 = (row.rank ?? 99) <= 3;
+                  const isTied = row.rank !== null && (rankCounts.get(row.rank) ?? 0) > 1;
                   return (
                     <tr
                       key={row.id}
@@ -88,7 +94,7 @@ export default async function OrderOfMeritPage({
                     >
                       <td className="px-5 py-4">
                         <span className={clsx("font-heading text-lg font-bold", top3 ? "text-tp-gold" : "text-tp-offwhite")}>
-                          {row.rank ?? "—"}
+                          {row.rank === null ? "—" : isTied ? `T${row.rank}` : row.rank}
                         </span>
                         {row.previous_rank !== null && move.direction !== "same" && (
                           <span
