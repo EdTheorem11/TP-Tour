@@ -82,10 +82,9 @@ async function send(to: string, subject: string, html: string): Promise<{ error?
 export async function sendWelcomeEmail(to: string, firstName: string) {
   const html = wrapper(
     `<h1 style="font-size:22px;margin:0 0 16px;">Welcome to TP Tour, ${firstName}.</h1>
-     <p>Thanks for applying to join TP Tour — the UAE's golf society for professionals across Finance, Crypto, Digital Assets and FinTech.</p>
-     <p>Your application is being reviewed. We'll email you as soon as you're approved and able to enter events.</p>
-     ${button("Visit TP Tour", SITE_URL)}`,
-    "Your TP Tour application has been received.",
+     <p>You're in — TP Tour is the UAE's golf society for professionals across Finance, Crypto, Digital Assets and FinTech. You can enter events and connect with other members right away.</p>
+     ${button("View Tour Schedule", `${SITE_URL}/tour-schedule`)}`,
+    "You're in — welcome to TP Tour.",
   );
   return send(to, "Welcome to TP Tour", html);
 }
