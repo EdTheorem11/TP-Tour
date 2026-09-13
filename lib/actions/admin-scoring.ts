@@ -51,6 +51,9 @@ export async function saveEventScores(eventId: string, formData: FormData) {
 export async function bulkUploadScores(eventId: string, formData: FormData) {
   const { supabase, adminId } = await requireAdmin();
 
+  const { data: event } = await supabase.from("events").select("format").eq("id", eventId).single();
+  const isStrokeplay = event?.format === "strokeplay";
+
   const file = formData.get("scores_csv");
   if (!(file instanceof File) || file.size === 0) {
     redirect(`/admin/scoring/${eventId}?importError=${encodeURIComponent("No file selected.")}`);
@@ -62,7 +65,8 @@ export async function bulkUploadScores(eventId: string, formData: FormData) {
     redirect(`/admin/scoring/${eventId}?importError=${encodeURIComponent("CSV has no data rows.")}`);
   }
 
-  const header = table[0].map((h) => h.trim().toLowerCase());
+  // Strip a UTF-8 BOM some spreadsheet apps prepend to the first header cell.
+  const header = table[0].map((h) => h.replace(/^﻿/, "").trim().toLowerCase());
   const idx = {
     email: header.indexOf("email"),
     handicap: header.indexOf("playing handicap"),
@@ -74,23 +78,34 @@ export async function bulkUploadScores(eventId: string, formData: FormData) {
     redirect(`/admin/scoring/${eventId}?importError=${encodeURIComponent('CSV must have an "Email" column.')}`);
   }
 
+  // Require the score column this event's format actually uses, so a
+  // mismatched or hand-edited CSV fails loudly instead of "succeeding"
+  // with every score silently written as null.
+  const missingScoreColumn = isStrokeplay
+    ? idx.gross === -1 && idx.nett === -1
+    : idx.stableford === -1;
+  if (missingScoreColumn) {
+    const expected = isStrokeplay ? '"Gross" and/or "Nett"' : '"Stableford"';
+    redirect(
+      `/admin/scoring/${eventId}?importError=${encodeURIComponent(
+        `CSV must have a ${expected} column for this ${isStrokeplay ? "strokeplay" : "Stableford"} event. Use "Download Scoring Template" to get the right format.`,
+      )}`,
+    );
+  }
+
   const dataRows = table.slice(1).filter((r) => r.some((c) => c.trim() !== ""));
   const emails = dataRows.map((r) => r[idx.email]?.trim().toLowerCase()).filter(Boolean);
 
   const { data: members } = await supabase.from("member_profiles").select("id, email").in("email", emails);
   const memberByEmail = new Map((members ?? []).map((m) => [m.email.toLowerCase(), m.id]));
 
-  const num = (v: string | undefined) => (v && v.trim() !== "" ? Number(v) : null);
+  const num = (v: string | undefined) => {
+    if (!v || v.trim() === "") return null;
+    const n = Number(v);
+    return Number.isFinite(n) ? n : null;
+  };
 
-  const rows: Array<{
-    event_id: string;
-    member_id: string;
-    playing_handicap: number | null;
-    gross_score: number | null;
-    nett_score: number | null;
-    stableford_points: number | null;
-    entered_by: string;
-  }> = [];
+  const rows: Array<Record<string, string | number | null>> = [];
   const skipped: string[] = [];
 
   for (const r of dataRows) {
@@ -100,15 +115,19 @@ export async function bulkUploadScores(eventId: string, formData: FormData) {
       if (email) skipped.push(email);
       continue;
     }
-    rows.push({
+    // Only include columns actually present in the CSV, so re-uploading a
+    // partial sheet (e.g. just email + score) doesn't null out fields
+    // — like playing handicap — that a column omission shouldn't touch.
+    const row: Record<string, string | number | null> = {
       event_id: eventId,
       member_id: memberId,
-      playing_handicap: idx.handicap > -1 ? num(r[idx.handicap]) : null,
-      gross_score: idx.gross > -1 ? num(r[idx.gross]) : null,
-      nett_score: idx.nett > -1 ? num(r[idx.nett]) : null,
-      stableford_points: idx.stableford > -1 ? num(r[idx.stableford]) : null,
       entered_by: adminId,
-    });
+    };
+    if (idx.handicap > -1) row.playing_handicap = num(r[idx.handicap]);
+    if (idx.gross > -1) row.gross_score = num(r[idx.gross]);
+    if (idx.nett > -1) row.nett_score = num(r[idx.nett]);
+    if (idx.stableford > -1) row.stableford_points = num(r[idx.stableford]);
+    rows.push(row);
   }
 
   if (rows.length > 0) {
