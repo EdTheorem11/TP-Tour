@@ -1,7 +1,13 @@
 import Link from "next/link";
 import { getAllMembersAdmin } from "@/lib/data/admin";
 import { inputClass } from "@/components/admin/form";
+import { ShareLinkButtons } from "@/components/ui/share-link-buttons";
 import { formatHandicap, tbc } from "@/lib/format";
+import type { MemberProfile } from "@/lib/types";
+
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3010";
+const REGISTER_URL = `${SITE_URL}/register`;
+const REGISTER_MESSAGE = `You've been invited to join TP Tour — the UAE's golf society for Finance & Crypto professionals. Click the link to register: ${REGISTER_URL}`;
 
 const statusStyles: Record<string, string> = {
   pending: "text-tp-gold",
@@ -10,20 +16,63 @@ const statusStyles: Record<string, string> = {
   rejected: "text-red-400",
 };
 
+function getSignupStats(members: MemberProfile[]) {
+  const now = Date.now();
+  const DAY_MS = 24 * 60 * 60 * 1000;
+  const startOfToday = new Date();
+  startOfToday.setHours(0, 0, 0, 0);
+  return [
+    { label: "Total Members", value: members.length },
+    { label: "Signed Up Today", value: members.filter((m) => new Date(m.created_at) >= startOfToday).length },
+    { label: "Last 7 Days", value: members.filter((m) => now - new Date(m.created_at).getTime() <= 7 * DAY_MS).length },
+    { label: "Last 30 Days", value: members.filter((m) => now - new Date(m.created_at).getTime() <= 30 * DAY_MS).length },
+  ];
+}
+
 export default async function AdminMembersPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
   const params = await searchParams;
-  const members = await getAllMembersAdmin(params.q);
+  const [members, allMembers] = await Promise.all([
+    getAllMembersAdmin(params.q),
+    getAllMembersAdmin(),
+  ]);
+
+  const signupStats = getSignupStats(allMembers);
 
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-4">
         <h1 className="font-heading text-3xl font-bold uppercase text-tp-offwhite">Members</h1>
-        <a
-          href="/api/admin/members/export"
-          className="border border-white/15 px-4 py-2 text-xs font-semibold uppercase tracking-[0.1em] text-tp-offwhite/80 hover:border-tp-gold hover:text-tp-gold"
-        >
-          Download CSV
-        </a>
+        <div className="flex gap-3">
+          <details className="group relative">
+            <summary className="flex cursor-pointer list-none items-center border border-white/15 px-4 py-2 text-xs font-semibold uppercase tracking-[0.1em] text-tp-offwhite/80 hover:border-tp-gold hover:text-tp-gold [&::-webkit-details-marker]:hidden">
+              + Add Member
+            </summary>
+            <div className="absolute right-0 z-10 mt-2 w-80 border border-white/15 bg-tp-dark p-5">
+              <p className="text-xs text-tp-offwhite/50">
+                Send this registration link to invite someone to join &mdash; they sign up and set their own
+                password, no need to create an account for them.
+              </p>
+              <div className="mt-4">
+                <ShareLinkButtons url={REGISTER_URL} message={REGISTER_MESSAGE} emailSubject="You're invited to join TP Tour" />
+              </div>
+            </div>
+          </details>
+          <a
+            href="/api/admin/members/export"
+            className="border border-white/15 px-4 py-2 text-xs font-semibold uppercase tracking-[0.1em] text-tp-offwhite/80 hover:border-tp-gold hover:text-tp-gold"
+          >
+            Download CSV
+          </a>
+        </div>
+      </div>
+
+      <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
+        {signupStats.map((s) => (
+          <div key={s.label} className="border border-white/10 bg-tp-dark p-5">
+            <p className="font-heading text-2xl font-bold text-tp-gold">{s.value}</p>
+            <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.1em] text-tp-offwhite/50">{s.label}</p>
+          </div>
+        ))}
       </div>
 
       <form action="/admin/members" method="get" className="mt-6 max-w-sm">
