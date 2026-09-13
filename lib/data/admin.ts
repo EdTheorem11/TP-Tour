@@ -44,10 +44,14 @@ export async function getDashboardStats() {
 
     let nextEventEntries = 0;
     let nextEventSpaces: number | null = null;
+    let nextEventMaxPlayers: number | null = null;
+    let nextEventWaitingList = 0;
     if (nextEvent) {
       const { data: capacity } = await supabase.from("event_capacity").select("*").eq("event_id", nextEvent.id).single();
       nextEventEntries = capacity?.players_entered ?? 0;
       nextEventSpaces = capacity?.spaces_remaining ?? null;
+      nextEventMaxPlayers = capacity?.max_players ?? null;
+      nextEventWaitingList = capacity?.waiting_list_count ?? 0;
     }
 
     const { count: upcomingEvents } = await supabase
@@ -66,6 +70,8 @@ export async function getDashboardStats() {
       nextEvent: nextEvent as TourEvent | null,
       nextEventEntries,
       nextEventSpaces,
+      nextEventMaxPlayers,
+      nextEventWaitingList,
     };
   }, {
     totalMembers: 0,
@@ -77,6 +83,8 @@ export async function getDashboardStats() {
     nextEvent: null as TourEvent | null,
     nextEventEntries: 0,
     nextEventSpaces: null as number | null,
+    nextEventMaxPlayers: null as number | null,
+    nextEventWaitingList: 0,
   });
 }
 

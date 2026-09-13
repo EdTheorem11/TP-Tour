@@ -12,8 +12,6 @@ export default async function AdminDashboardPage() {
     { label: "Pending Approvals", value: stats.pendingApprovals, highlight: stats.pendingApprovals > 0 },
     { label: "Entries This Week", value: stats.entriesThisWeek },
     { label: "Upcoming Events", value: stats.upcomingEvents },
-    { label: "Next Event Entries", value: stats.nextEventEntries },
-    { label: "Available Spaces", value: stats.nextEventSpaces ?? "—" },
   ];
 
   return (
@@ -59,7 +57,38 @@ export default async function AdminDashboardPage() {
           <p className="mt-1 text-sm text-tp-offwhite/50">
             {formatEventDateLong(stats.nextEvent.event_date)} &middot; {tbc(stats.nextEvent.location)}
           </p>
-          <Link href={`/admin/entries/${stats.nextEvent.id}`} className="mt-3 inline-block text-sm text-tp-gold hover:underline">
+
+          <div className="mt-5 grid grid-cols-2 gap-px overflow-hidden border border-white/10 bg-white/10 sm:grid-cols-4">
+            <div className="bg-tp-black px-4 py-3">
+              <p className="font-heading text-xl font-bold text-tp-offwhite">
+                {stats.nextEventEntries}
+                {stats.nextEventMaxPlayers !== null && (
+                  <span className="text-sm font-normal text-tp-offwhite/40"> / {stats.nextEventMaxPlayers}</span>
+                )}
+              </p>
+              <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.1em] text-tp-offwhite/50">Signed Up</p>
+            </div>
+            <div className="bg-tp-black px-4 py-3">
+              <p
+                className={`font-heading text-xl font-bold ${
+                  stats.nextEventSpaces === 0 ? "text-red-400" : "text-tp-green-light"
+                }`}
+              >
+                {stats.nextEventSpaces === 0 ? "Full" : tbc(stats.nextEventSpaces)}
+              </p>
+              <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.1em] text-tp-offwhite/50">Spaces Remaining</p>
+            </div>
+            <div className="bg-tp-black px-4 py-3">
+              <p className="font-heading text-xl font-bold text-tp-gold">{stats.nextEventWaitingList}</p>
+              <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.1em] text-tp-offwhite/50">Waiting List</p>
+            </div>
+            <div className="bg-tp-black px-4 py-3">
+              <p className="font-heading text-xl font-bold text-tp-offwhite">{tbc(stats.nextEventMaxPlayers)}</p>
+              <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.1em] text-tp-offwhite/50">Max Players</p>
+            </div>
+          </div>
+
+          <Link href={`/admin/entries/${stats.nextEvent.id}`} className="mt-5 inline-block text-sm text-tp-gold hover:underline">
             Manage Entries &rarr;
           </Link>
         </div>
