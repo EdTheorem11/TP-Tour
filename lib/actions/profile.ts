@@ -133,3 +133,14 @@ export async function submitMyHandicapChange(newHandicap: number, reason: string
   revalidatePath("/my-tp-tour/profile");
   return {};
 }
+
+// Marks the first-login welcome modal as shown, so it never shows again.
+export async function markWelcomed() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return;
+
+  await supabase.from("member_profiles").update({ welcomed_at: new Date().toISOString() }).eq("id", user.id);
+}

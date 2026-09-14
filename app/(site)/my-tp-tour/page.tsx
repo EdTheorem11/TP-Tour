@@ -4,8 +4,9 @@ import { Container } from "@/components/ui/container";
 import { LinkButton } from "@/components/ui/button";
 import { InviteShare } from "@/components/site/invite-share";
 import { HandicapTrend } from "@/components/site/handicap-trend";
+import { WelcomeModal } from "@/components/site/welcome-modal";
 import { getCurrentProfile } from "@/lib/data/current-user";
-import { getCurrentSeason, getPlayerOomRow, getMyNextEntry, getMyHandicapHistory } from "@/lib/data/site";
+import { getCurrentSeason, getPlayerOomRow, getMyNextEntry, getMyHandicapHistory, getNextEvent } from "@/lib/data/site";
 import { formatHandicap, formatEventDateLong, tbc } from "@/lib/format";
 import { FORMAT_LABELS } from "@/lib/types";
 
@@ -14,11 +15,14 @@ export default async function MyTpTourPage() {
   if (!profile) redirect("/login?next=/my-tp-tour");
 
   const season = await getCurrentSeason();
-  const [oom, nextEntry, handicapHistory] = await Promise.all([
+  const [oom, nextEntry, handicapHistory, upcomingEvent] = await Promise.all([
     season ? getPlayerOomRow(season.id, profile.id) : Promise.resolve(null),
     getMyNextEntry(profile.id),
     getMyHandicapHistory(profile.id),
+    getNextEvent(),
   ]);
+
+  const showWelcomeModal = !profile.welcomed_at && !!upcomingEvent;
 
   const stats = [
     { label: "Handicap", value: formatHandicap(profile.current_handicap) },
@@ -139,6 +143,14 @@ export default async function MyTpTourPage() {
           <InviteShare />
         </div>
       </Container>
+
+      {showWelcomeModal && upcomingEvent && (
+        <WelcomeModal
+          eventName={upcomingEvent.name}
+          eventSlug={upcomingEvent.slug}
+          eventDate={formatEventDateLong(upcomingEvent.event_date)}
+        />
+      )}
     </section>
   );
 }

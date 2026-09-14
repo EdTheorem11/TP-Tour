@@ -67,6 +67,7 @@ export interface MemberProfile {
   show_job_title_publicly: boolean;
   show_contact_publicly: boolean;
   approved_at: string | null;
+  welcomed_at: string | null;
   created_at: string;
   updated_at: string;
 }

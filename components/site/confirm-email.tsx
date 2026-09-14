@@ -40,9 +40,9 @@ export function ConfirmEmail() {
   // change that the email is confirmed, so this always shows success.
   return (
     <div className="mt-10 border border-tp-green/40 bg-tp-green/10 p-6">
-      <p className="font-heading text-lg font-bold uppercase text-tp-green-light">Email Address Confirmed</p>
+      <p className="font-heading text-lg font-bold uppercase text-tp-green-light">You&rsquo;re in the TP Tour</p>
       <p className="mt-2 text-sm text-tp-offwhite/70">
-        Your TP Tour account is ready. Log in to enter events and connect with other members.
+        Thank you for confirming your email address. Please click Login below to access your account.
       </p>
       <LinkButton href="/login" variant="gold" size="lg" className="mt-5">
         Login
