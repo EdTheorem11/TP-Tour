@@ -7,12 +7,14 @@ import { clsx } from "clsx";
 export function HeroBackground({
   src,
   videoSrc,
+  mobileVideoSrc,
   alt,
   children,
   className,
 }: {
   src: string;
   videoSrc?: string;
+  mobileVideoSrc?: string;
   alt: string;
   children: ReactNode;
   className?: string;
@@ -46,8 +48,25 @@ export function HeroBackground({
           alt={alt}
           fill
           priority
-          className={clsx("object-cover", videoSrc && "sm:hidden")}
+          className={clsx(
+            "object-cover",
+            videoSrc && "sm:hidden",
+            mobileVideoSrc && "max-sm:hidden",
+          )}
         />
+        {mobileVideoSrc && (
+          <video
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="metadata"
+            poster={src}
+            className="absolute inset-0 h-full w-full object-cover sm:hidden"
+          >
+            <source src={mobileVideoSrc} type="video/mp4" />
+          </video>
+        )}
         {videoSrc && (
           <video
             autoPlay

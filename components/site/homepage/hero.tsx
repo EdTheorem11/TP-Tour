@@ -17,6 +17,7 @@ export function Hero({
     <HeroBackground
       src="/hero.png"
       videoSrc="/hero-video.mp4"
+      mobileVideoSrc="/hero-video-mobile.mp4"
       alt="TP Tour — golf at sunrise with the Dubai skyline"
     >
       <Container className="py-32">
