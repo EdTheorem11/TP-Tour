@@ -3,7 +3,9 @@ import { getAllMembersAdmin, getAllAuthActivity } from "@/lib/data/admin";
 import { inputClass } from "@/components/admin/form";
 import { ConfirmSubmitButton } from "@/components/admin/confirm-submit-button";
 import { ShareLinkButtons } from "@/components/ui/share-link-buttons";
-import { resendConfirmationEmailBulk, resendConfirmationEmailFromList } from "@/lib/actions/admin-members";
+import { AutoToast } from "@/components/admin/auto-toast";
+import { MemberResendButton } from "@/components/admin/member-resend-button";
+import { resendConfirmationEmailBulk } from "@/lib/actions/admin-members";
 import { formatHandicap, formatDateTime, tbc } from "@/lib/format";
 import type { MemberProfile } from "@/lib/types";
 
@@ -89,26 +91,26 @@ export default async function AdminMembersPage({
         </div>
       </div>
 
-      {(params.resent !== undefined || params.deleted) && (
-        <div className="fixed bottom-6 right-6 z-50 max-w-sm border border-tp-green/40 bg-tp-dark px-5 py-4 text-sm text-tp-green-light shadow-2xl shadow-black/50">
-          <Link
-            href={params.q ? `/admin/members?q=${encodeURIComponent(params.q)}` : "/admin/members"}
-            className="absolute right-2 top-2 text-tp-offwhite/40 hover:text-tp-offwhite"
-            aria-label="Dismiss"
-          >
-            &times;
-          </Link>
-          {params.resent !== undefined && (
-            <p className="pr-4">
-              Resent confirmation email to {params.resent} member{params.resent === "1" ? "" : "s"}.
-              {params.resendFailed && params.resendFailed !== "0" && (
-                <span className="mt-1 block text-tp-gold">Failed for {params.resendFailed} — check Supabase&rsquo;s auth rate limits if this keeps happening.</span>
-              )}
-            </p>
-          )}
-          {params.deleted && <p className="pr-4">Member deleted.</p>}
-        </div>
-      )}
+      {(() => {
+        const cleanHref = params.q ? `/admin/members?q=${encodeURIComponent(params.q)}` : "/admin/members";
+        if (params.resent !== undefined) {
+          const failedNote =
+            params.resendFailed && params.resendFailed !== "0"
+              ? ` Failed for ${params.resendFailed} — check Supabase's auth rate limits if this keeps happening.`
+              : "";
+          return (
+            <AutoToast
+              message={`Resent confirmation email to ${params.resent} member${params.resent === "1" ? "" : "s"}.${failedNote}`}
+              variant="success"
+              cleanHref={cleanHref}
+            />
+          );
+        }
+        if (params.deleted) {
+          return <AutoToast message="Member deleted." variant="success" cleanHref={cleanHref} />;
+        }
+        return null;
+      })()}
 
       <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
         {signupStats.map((s) => (
@@ -160,14 +162,7 @@ export default async function AdminMembersPage({
                     ) : (
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-semibold uppercase tracking-[0.08em] text-red-400">Not Confirmed</span>
-                        <form action={resendConfirmationEmailFromList.bind(null, m.id)}>
-                          <button
-                            type="submit"
-                            className="border border-white/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.05em] text-tp-offwhite/70 hover:border-tp-gold hover:text-tp-gold"
-                          >
-                            Resend
-                          </button>
-                        </form>
+                        <MemberResendButton memberId={m.id} memberName={`${m.first_name} ${m.last_name}`} memberEmail={m.email} />
                       </div>
                     )}
                   </td>

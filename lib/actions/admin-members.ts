@@ -171,11 +171,13 @@ export async function resendConfirmationEmailAdmin(memberId: string) {
   }
 }
 
-export async function resendConfirmationEmailFromList(memberId: string) {
+// Called directly from a client component (no form submission / redirect)
+// so the admin's scroll position in a long member list is never disturbed.
+export async function resendConfirmationEmailFromList(memberId: string): Promise<{ error?: string }> {
   try {
     const { supabase, adminId } = await requireAdmin();
     const { data: member } = await supabase.from("member_profiles").select("email").eq("id", memberId).single();
-    if (!member) redirect("/admin/members?resent=0&resendFailed=1");
+    if (!member) return { error: "Member not found." };
 
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
     const { error } = await supabase.auth.resend({
@@ -183,16 +185,13 @@ export async function resendConfirmationEmailFromList(memberId: string) {
       email: member.email,
       options: { emailRedirectTo: `${siteUrl}/confirm-email` },
     });
+    if (error) return { error: error.message };
 
-    if (!error) {
-      await supabase.from("admin_audit_log").insert({ admin_id: adminId, action: "resend_confirmation_email", entity_type: "member_profiles", entity_id: memberId });
-    }
-
+    await supabase.from("admin_audit_log").insert({ admin_id: adminId, action: "resend_confirmation_email", entity_type: "member_profiles", entity_id: memberId });
     revalidatePath("/admin/members");
-    redirect(error ? "/admin/members?resent=0&resendFailed=1" : "/admin/members?resent=1&resendFailed=0");
+    return {};
   } catch (e) {
-    if (isRedirectSignal(e)) throw e;
-    redirect("/admin/members?resent=0&resendFailed=1");
+    return { error: e instanceof Error ? e.message : "Unknown error." };
   }
 }
 

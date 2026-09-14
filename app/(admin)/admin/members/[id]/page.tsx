@@ -1,10 +1,10 @@
 import { notFound } from "next/navigation";
-import Link from "next/link";
 import { getMemberAdmin, getMemberHandicapHistory, getAuthActivity } from "@/lib/data/admin";
 import { getCurrentProfile } from "@/lib/data/current-user";
 import { Field, inputClass } from "@/components/admin/form";
 import { Button } from "@/components/ui/button";
 import { ConfirmSubmitButton } from "@/components/admin/confirm-submit-button";
+import { AutoToast } from "@/components/admin/auto-toast";
 import {
   approveMember,
   suspendMember,
@@ -57,19 +57,12 @@ export default async function AdminMemberDetailPage({
         <span className="text-xs font-semibold uppercase tracking-[0.1em] text-tp-gold">{member.status}</span>
       </div>
 
-      {(resendSuccess || resendError || deleteError) && (
-        <div
-          className={`fixed bottom-6 right-6 z-50 max-w-sm border px-5 py-4 text-sm shadow-2xl shadow-black/50 ${
-            resendSuccess ? "border-tp-green/40 bg-tp-dark text-tp-green-light" : "border-red-500/40 bg-tp-dark text-red-400"
-          }`}
-        >
-          <Link href={`/admin/members/${id}`} className="absolute right-2 top-2 text-tp-offwhite/40 hover:text-tp-offwhite" aria-label="Dismiss">
-            &times;
-          </Link>
-          {resendSuccess && <p className="pr-4">Confirmation email sent.</p>}
-          {resendError && <p className="pr-4">Couldn&rsquo;t send the confirmation email: {resendError}</p>}
-          {deleteError && <p className="pr-4">Couldn&rsquo;t delete this member: {deleteError}</p>}
-        </div>
+      {resendSuccess && <AutoToast message="Confirmation email sent." variant="success" cleanHref={`/admin/members/${id}`} />}
+      {resendError && (
+        <AutoToast message={`Couldn't send the confirmation email: ${resendError}`} variant="error" cleanHref={`/admin/members/${id}`} />
+      )}
+      {deleteError && (
+        <AutoToast message={`Couldn't delete this member: ${deleteError}`} variant="error" cleanHref={`/admin/members/${id}`} />
       )}
 
       <div className="mt-8 flex flex-wrap gap-3">
