@@ -26,7 +26,7 @@ export function Toast({
       <button
         type="button"
         onClick={onDismiss}
-        className="absolute right-2 top-2 text-tp-offwhite/40 hover:text-tp-offwhite"
+        className="absolute right-2 top-2 rounded-sm p-1 text-tp-offwhite/40 transition-all duration-150 hover:bg-white/10 hover:text-tp-offwhite active:scale-90"
         aria-label="Dismiss"
       >
         &times;

@@ -91,7 +91,7 @@ export default async function AdminMemberDetailPage({
                 <div className="flex items-center gap-3">
                   <span className="text-sm font-semibold text-red-400">Not Confirmed</span>
                   <form action={resendConfirmationEmailAdmin.bind(null, id)}>
-                    <button type="submit" className="text-xs text-tp-gold hover:underline">
+                    <button type="submit" className="text-xs text-tp-gold transition-transform duration-150 hover:underline active:scale-95">
                       Resend Confirmation Email
                     </button>
                   </form>

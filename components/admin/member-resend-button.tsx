@@ -31,7 +31,7 @@ export function MemberResendButton({
             );
           })
         }
-        className="border border-white/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.05em] text-tp-offwhite/70 hover:border-tp-gold hover:text-tp-gold disabled:opacity-40"
+        className="border border-white/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.05em] text-tp-offwhite/70 transition-all duration-150 hover:border-tp-gold hover:bg-tp-gold/10 hover:text-tp-gold active:scale-95 disabled:opacity-40 disabled:active:scale-100"
       >
         {pending ? "Sending…" : "Resend"}
       </button>

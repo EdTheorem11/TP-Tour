@@ -6,7 +6,7 @@ const variants = {
   primary: "bg-tp-green text-tp-offwhite hover:bg-tp-green-light",
   gold: "bg-tp-gold text-tp-black hover:bg-tp-gold-light",
   outline: "border border-tp-offwhite/30 text-tp-offwhite hover:border-tp-offwhite hover:bg-tp-offwhite/5",
-  ghost: "text-tp-offwhite hover:text-tp-gold",
+  ghost: "text-tp-offwhite hover:bg-tp-offwhite/5 hover:text-tp-gold",
   danger: "bg-red-600 text-white hover:bg-red-500",
 };
 
@@ -17,7 +17,7 @@ const sizes = {
 };
 
 const base =
-  "inline-flex items-center justify-center gap-2 font-semibold uppercase tracking-[0.12em] transition-colors duration-200 disabled:opacity-40 disabled:pointer-events-none";
+  "inline-flex items-center justify-center gap-2 font-semibold uppercase tracking-[0.12em] transition-all duration-150 active:scale-[0.96] disabled:opacity-40 disabled:pointer-events-none disabled:active:scale-100";
 
 type Variant = keyof typeof variants;
 type Size = keyof typeof sizes;
