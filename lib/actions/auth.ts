@@ -4,6 +4,13 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { sendWelcomeEmail, sendPasswordChangedEmail } from "@/lib/email";
 
+// Supabase's signUp/resend calls send the confirmation email inline as
+// part of the request (via the configured SMTP relay) — if that relay is
+// slow, the request can run past Vercel's default function timeout and
+// come back as a 504 Gateway Timeout even though Supabase itself would
+// have eventually succeeded. Give these more room.
+export const maxDuration = 30;
+
 export interface RegisterInput {
   firstName: string;
   lastName: string;
