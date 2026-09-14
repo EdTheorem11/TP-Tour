@@ -5,6 +5,7 @@ import { Container } from "@/components/ui/container";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { EntryPanel } from "@/components/site/entry-panel";
 import { AddToCalendar } from "@/components/site/add-to-calendar";
+import { ArrowScrollRow } from "@/components/ui/arrow-scroll-row";
 import {
   getEventBySlug,
   getEventCapacity,
@@ -224,24 +225,30 @@ export default async function EventDetailPage({ params }: { params: Promise<{ sl
 
             {photos.length > 0 && (
               <div className="mt-10">
-                <h2 className="font-heading text-xl font-bold uppercase text-tp-offwhite">Photos</h2>
-                <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
-                  {photos.map((photo) => (
-                    <a
-                      key={photo.id}
-                      href={photo.url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="relative block aspect-square overflow-hidden bg-tp-dark"
-                    >
-                      <Image
-                        src={photo.url}
-                        alt={photo.caption ?? `${event.name} photo`}
-                        fill
-                        className="object-cover transition-transform hover:scale-105"
-                      />
-                    </a>
-                  ))}
+                <h2 className="font-heading text-xl font-bold uppercase text-tp-offwhite">
+                  Photos ({photos.length})
+                </h2>
+                <div className="mt-4">
+                  <ArrowScrollRow className="no-scrollbar overflow-x-auto">
+                    <div className="flex w-max gap-3">
+                      {photos.map((photo) => (
+                        <a
+                          key={photo.id}
+                          href={photo.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="relative block h-40 w-40 shrink-0 overflow-hidden bg-tp-dark sm:h-48 sm:w-48"
+                        >
+                          <Image
+                            src={photo.url}
+                            alt={photo.caption ?? `${event.name} photo`}
+                            fill
+                            className="object-cover transition-transform hover:scale-105"
+                          />
+                        </a>
+                      ))}
+                    </div>
+                  </ArrowScrollRow>
                 </div>
               </div>
             )}
