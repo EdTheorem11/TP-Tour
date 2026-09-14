@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import type { MemberProfile, TourEvent, GolfClub, Course, Partner, Season } from "@/lib/types";
 
@@ -9,6 +10,41 @@ async function safe<T>(fn: () => Promise<T>, fallback: T): Promise<T> {
   } catch {
     return fallback;
   }
+}
+
+export interface AuthActivity {
+  email_confirmed_at: string | null;
+  last_sign_in_at: string | null;
+}
+
+// Email confirmation and last-login are tracked by Supabase Auth itself on
+// every account (not something our own schema needs to track), so this
+// works retroactively for members who signed up before this existed too.
+export async function getAllAuthActivity(): Promise<Map<string, AuthActivity>> {
+  const activity = new Map<string, AuthActivity>();
+  const admin = createAdminClient();
+  if (!admin) return activity;
+
+  let page = 1;
+  const perPage = 200;
+  for (;;) {
+    const { data, error } = await admin.auth.admin.listUsers({ page, perPage });
+    if (error || !data) break;
+    for (const u of data.users) {
+      activity.set(u.id, { email_confirmed_at: u.email_confirmed_at ?? null, last_sign_in_at: u.last_sign_in_at ?? null });
+    }
+    if (data.users.length < perPage) break;
+    page++;
+  }
+  return activity;
+}
+
+export async function getAuthActivity(memberId: string): Promise<AuthActivity | null> {
+  const admin = createAdminClient();
+  if (!admin) return null;
+  const { data, error } = await admin.auth.admin.getUserById(memberId);
+  if (error || !data.user) return null;
+  return { email_confirmed_at: data.user.email_confirmed_at ?? null, last_sign_in_at: data.user.last_sign_in_at ?? null };
 }
 
 export async function getDashboardStats() {

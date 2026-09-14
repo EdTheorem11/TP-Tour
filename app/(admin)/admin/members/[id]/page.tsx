@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { getMemberAdmin, getMemberHandicapHistory } from "@/lib/data/admin";
+import { getMemberAdmin, getMemberHandicapHistory, getAuthActivity } from "@/lib/data/admin";
 import { getCurrentProfile } from "@/lib/data/current-user";
 import { Field, inputClass } from "@/components/admin/form";
 import { Button } from "@/components/ui/button";
@@ -14,7 +14,7 @@ import {
   updateMemberDetailsAdmin,
   deleteMember,
 } from "@/lib/actions/admin-members";
-import { formatHandicap, tbc } from "@/lib/format";
+import { formatHandicap, formatDateTime, tbc } from "@/lib/format";
 import { INDUSTRY_OPTIONS } from "@/lib/types";
 
 export default async function AdminMemberDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -23,6 +23,7 @@ export default async function AdminMemberDetailPage({ params }: { params: Promis
   if (!member) notFound();
   const currentAdmin = await getCurrentProfile();
   const isSuperAdmin = currentAdmin?.role === "super_admin";
+  const authActivity = await getAuthActivity(id);
 
   const history = await getMemberHandicapHistory(id) as Array<{
     id: string;
@@ -57,6 +58,28 @@ export default async function AdminMemberDetailPage({ params }: { params: Promis
         <form action={rejectMember.bind(null, id)}>
           <Button type="submit" variant="outline" size="sm">Reject</Button>
         </form>
+      </div>
+
+      <div className="mt-10 border-t border-white/10 pt-8">
+        <h2 className="font-heading text-lg font-bold uppercase text-tp-offwhite">Account</h2>
+        <dl className="mt-4 grid gap-4 sm:grid-cols-2">
+          <div>
+            <dt className="text-xs font-semibold uppercase tracking-[0.1em] text-tp-offwhite/40">Email Confirmed</dt>
+            <dd className="mt-1">
+              {authActivity?.email_confirmed_at ? (
+                <span className="text-sm font-semibold text-tp-green-light">
+                  Confirmed &middot; {formatDateTime(authActivity.email_confirmed_at)}
+                </span>
+              ) : (
+                <span className="text-sm font-semibold text-red-400">Not Confirmed</span>
+              )}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-xs font-semibold uppercase tracking-[0.1em] text-tp-offwhite/40">Last Login</dt>
+            <dd className="mt-1 text-sm text-tp-offwhite">{formatDateTime(authActivity?.last_sign_in_at)}</dd>
+          </div>
+        </dl>
       </div>
 
       <div className="mt-10 border-t border-white/10 pt-8">

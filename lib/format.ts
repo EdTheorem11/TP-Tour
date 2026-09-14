@@ -29,6 +29,12 @@ export function formatHandicap(value: number | null | undefined): string {
   return value.toFixed(1);
 }
 
+export function formatDateTime(dateStr: string | null | undefined): string {
+  if (!dateStr) return "Never";
+  const d = new Date(dateStr);
+  return `${d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}, ${d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}`;
+}
+
 export function movementIndicator(rank: number | null, previousRank: number | null): { symbol: string; direction: "up" | "down" | "same" } {
   if (rank === null || previousRank === null) return { symbol: "—", direction: "same" };
   const diff = previousRank - rank;

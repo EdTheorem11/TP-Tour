@@ -1,8 +1,8 @@
 import Link from "next/link";
-import { getAllMembersAdmin } from "@/lib/data/admin";
+import { getAllMembersAdmin, getAllAuthActivity } from "@/lib/data/admin";
 import { inputClass } from "@/components/admin/form";
 import { ShareLinkButtons } from "@/components/ui/share-link-buttons";
-import { formatHandicap, tbc } from "@/lib/format";
+import { formatHandicap, formatDateTime, tbc } from "@/lib/format";
 import type { MemberProfile } from "@/lib/types";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3010";
@@ -31,9 +31,10 @@ function getSignupStats(members: MemberProfile[]) {
 
 export default async function AdminMembersPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
   const params = await searchParams;
-  const [members, allMembers] = await Promise.all([
+  const [members, allMembers, authActivity] = await Promise.all([
     getAllMembersAdmin(params.q),
     getAllMembersAdmin(),
+    getAllAuthActivity(),
   ]);
 
   const signupStats = getSignupStats(allMembers);
@@ -80,7 +81,7 @@ export default async function AdminMembersPage({ searchParams }: { searchParams:
       </form>
 
       <div className="mt-8 overflow-x-auto">
-        <table className="w-full min-w-[800px] border-collapse text-left text-sm">
+        <table className="w-full min-w-[1050px] border-collapse text-left text-sm">
           <thead>
             <tr className="border-b border-white/10 text-[11px] font-semibold uppercase tracking-[0.1em] text-tp-offwhite/40">
               <th className="py-3 pr-4">Member</th>
@@ -88,27 +89,40 @@ export default async function AdminMembersPage({ searchParams }: { searchParams:
               <th className="py-3 pr-4">Industry</th>
               <th className="py-3 pr-4">Hcp</th>
               <th className="py-3 pr-4">Status</th>
+              <th className="py-3 pr-4">Email Confirmed</th>
+              <th className="py-3 pr-4">Last Login</th>
               <th className="py-3 pr-4">Joined</th>
             </tr>
           </thead>
           <tbody>
-            {members.map((m) => (
-              <tr key={m.id} className="border-b border-white/5 hover:bg-white/[0.03]">
-                <td className="py-3 pr-4">
-                  <Link href={`/admin/members/${m.id}`} className="font-semibold text-tp-offwhite hover:text-tp-gold">
-                    {m.first_name} {m.last_name}
-                  </Link>
-                  <p className="text-xs text-tp-offwhite/40">{m.email}</p>
-                </td>
-                <td className="py-3 pr-4 text-tp-offwhite/60">{tbc(m.company)}</td>
-                <td className="py-3 pr-4 text-tp-offwhite/60">{tbc(m.industry)}</td>
-                <td className="py-3 pr-4 text-tp-offwhite/60">{formatHandicap(m.current_handicap)}</td>
-                <td className={`py-3 pr-4 text-xs font-semibold uppercase tracking-[0.08em] ${statusStyles[m.status]}`}>
-                  {m.status}
-                </td>
-                <td className="py-3 pr-4 text-tp-offwhite/40">{new Date(m.created_at).toLocaleDateString("en-GB")}</td>
-              </tr>
-            ))}
+            {members.map((m) => {
+              const activity = authActivity.get(m.id);
+              return (
+                <tr key={m.id} className="border-b border-white/5 hover:bg-white/[0.03]">
+                  <td className="py-3 pr-4">
+                    <Link href={`/admin/members/${m.id}`} className="font-semibold text-tp-offwhite hover:text-tp-gold">
+                      {m.first_name} {m.last_name}
+                    </Link>
+                    <p className="text-xs text-tp-offwhite/40">{m.email}</p>
+                  </td>
+                  <td className="py-3 pr-4 text-tp-offwhite/60">{tbc(m.company)}</td>
+                  <td className="py-3 pr-4 text-tp-offwhite/60">{tbc(m.industry)}</td>
+                  <td className="py-3 pr-4 text-tp-offwhite/60">{formatHandicap(m.current_handicap)}</td>
+                  <td className={`py-3 pr-4 text-xs font-semibold uppercase tracking-[0.08em] ${statusStyles[m.status]}`}>
+                    {m.status}
+                  </td>
+                  <td className="py-3 pr-4">
+                    {activity?.email_confirmed_at ? (
+                      <span className="text-xs font-semibold uppercase tracking-[0.08em] text-tp-green-light">Confirmed</span>
+                    ) : (
+                      <span className="text-xs font-semibold uppercase tracking-[0.08em] text-red-400">Not Confirmed</span>
+                    )}
+                  </td>
+                  <td className="py-3 pr-4 text-tp-offwhite/60">{formatDateTime(activity?.last_sign_in_at)}</td>
+                  <td className="py-3 pr-4 text-tp-offwhite/40">{new Date(m.created_at).toLocaleDateString("en-GB")}</td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
         {members.length === 0 && <p className="py-8 text-tp-offwhite/50">No members found.</p>}
