@@ -89,17 +89,24 @@ export default async function AdminMembersPage({
         </div>
       </div>
 
-      {params.resent !== undefined && (
-        <div className="mt-6 border border-tp-green/40 bg-tp-green/10 px-5 py-3 text-sm text-tp-green-light">
-          Resent confirmation email to {params.resent} member{params.resent === "1" ? "" : "s"}.
-          {params.resendFailed && params.resendFailed !== "0" && (
-            <span className="block text-tp-gold">Failed for {params.resendFailed} — check Supabase's auth rate limits if this keeps happening.</span>
+      {(params.resent !== undefined || params.deleted) && (
+        <div className="fixed bottom-6 right-6 z-50 max-w-sm border border-tp-green/40 bg-tp-dark px-5 py-4 text-sm text-tp-green-light shadow-2xl shadow-black/50">
+          <Link
+            href={params.q ? `/admin/members?q=${encodeURIComponent(params.q)}` : "/admin/members"}
+            className="absolute right-2 top-2 text-tp-offwhite/40 hover:text-tp-offwhite"
+            aria-label="Dismiss"
+          >
+            &times;
+          </Link>
+          {params.resent !== undefined && (
+            <p className="pr-4">
+              Resent confirmation email to {params.resent} member{params.resent === "1" ? "" : "s"}.
+              {params.resendFailed && params.resendFailed !== "0" && (
+                <span className="mt-1 block text-tp-gold">Failed for {params.resendFailed} — check Supabase&rsquo;s auth rate limits if this keeps happening.</span>
+              )}
+            </p>
           )}
-        </div>
-      )}
-      {params.deleted && (
-        <div className="mt-6 border border-tp-green/40 bg-tp-green/10 px-5 py-3 text-sm text-tp-green-light">
-          Member deleted.
+          {params.deleted && <p className="pr-4">Member deleted.</p>}
         </div>
       )}
 

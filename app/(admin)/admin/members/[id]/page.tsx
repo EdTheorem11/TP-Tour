@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import { getMemberAdmin, getMemberHandicapHistory, getAuthActivity } from "@/lib/data/admin";
 import { getCurrentProfile } from "@/lib/data/current-user";
 import { Field, inputClass } from "@/components/admin/form";
@@ -56,19 +57,18 @@ export default async function AdminMemberDetailPage({
         <span className="text-xs font-semibold uppercase tracking-[0.1em] text-tp-gold">{member.status}</span>
       </div>
 
-      {resendSuccess && (
-        <div className="mt-6 border border-tp-green/40 bg-tp-green/10 px-5 py-3 text-sm text-tp-green-light">
-          Confirmation email sent.
-        </div>
-      )}
-      {resendError && (
-        <div className="mt-6 border border-red-500/40 bg-red-500/10 px-5 py-3 text-sm text-red-400">
-          Couldn&rsquo;t send the confirmation email: {resendError}
-        </div>
-      )}
-      {deleteError && (
-        <div className="mt-6 border border-red-500/40 bg-red-500/10 px-5 py-3 text-sm text-red-400">
-          Couldn&rsquo;t delete this member: {deleteError}
+      {(resendSuccess || resendError || deleteError) && (
+        <div
+          className={`fixed bottom-6 right-6 z-50 max-w-sm border px-5 py-4 text-sm shadow-2xl shadow-black/50 ${
+            resendSuccess ? "border-tp-green/40 bg-tp-dark text-tp-green-light" : "border-red-500/40 bg-tp-dark text-red-400"
+          }`}
+        >
+          <Link href={`/admin/members/${id}`} className="absolute right-2 top-2 text-tp-offwhite/40 hover:text-tp-offwhite" aria-label="Dismiss">
+            &times;
+          </Link>
+          {resendSuccess && <p className="pr-4">Confirmation email sent.</p>}
+          {resendError && <p className="pr-4">Couldn&rsquo;t send the confirmation email: {resendError}</p>}
+          {deleteError && <p className="pr-4">Couldn&rsquo;t delete this member: {deleteError}</p>}
         </div>
       )}
 
