@@ -13,6 +13,7 @@ import {
   deleteEventPhoto,
 } from "@/lib/actions/admin-events";
 import { Button, LinkButton } from "@/components/ui/button";
+import { AutoToast } from "@/components/admin/auto-toast";
 import type { TourEvent, Partner } from "@/lib/types";
 
 export default async function EditEventPage({
@@ -20,10 +21,10 @@ export default async function EditEventPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ saved?: string; photosUploaded?: string; photosFailed?: string }>;
+  searchParams: Promise<{ saved?: string; photosUploaded?: string; photosFailed?: string; photosError?: string }>;
 }) {
   const { id } = await params;
-  const { saved, photosUploaded, photosFailed } = await searchParams;
+  const { saved, photosUploaded, photosFailed, photosError } = await searchParams;
   const supabase = await createClient();
   const { data: event } = await supabase.from("events").select("*").eq("id", id).single();
   if (!event) notFound();
@@ -44,28 +45,17 @@ export default async function EditEventPage({
 
   return (
     <div>
-      {saved === "1" && (
-        <div className="mb-6 border border-tp-green/40 bg-tp-green/10 px-5 py-3 text-sm text-tp-green-light">
-          Changes saved.
-        </div>
-      )}
-      {photosUploaded !== undefined && (
-        <div
-          className={`mb-6 border px-5 py-3 text-sm ${
-            photosFailed && photosFailed !== "0"
-              ? "border-tp-gold/40 bg-tp-gold/10 text-tp-gold"
-              : "border-tp-green/40 bg-tp-green/10 text-tp-green-light"
-          }`}
-        >
-          Uploaded {photosUploaded} photo{photosUploaded === "1" ? "" : "s"}.
-          {photosFailed && photosFailed !== "0" && (
-            <span className="block">
-              {photosFailed} photo{photosFailed === "1" ? "" : "s"} couldn&rsquo;t be uploaded — each photo must be
-              under 15MB and a recognised image format (JPG, PNG, etc).
-            </span>
-          )}
-        </div>
-      )}
+      {saved === "1" && <AutoToast message="Changes saved." variant="success" cleanHref={`/admin/events/${id}`} />}
+      {photosUploaded !== undefined &&
+        (() => {
+          const hasFailures = photosFailed && photosFailed !== "0";
+          let message = `Uploaded ${photosUploaded} photo${photosUploaded === "1" ? "" : "s"}.`;
+          if (hasFailures) {
+            message += ` ${photosFailed} photo${photosFailed === "1" ? "" : "s"} couldn't be uploaded.`;
+            if (photosError) message += ` ${photosError}`;
+          }
+          return <AutoToast message={message} variant={hasFailures ? "error" : "success"} cleanHref={`/admin/events/${id}`} />;
+        })()}
 
       <div className="flex flex-wrap items-center justify-between gap-4">
         <h1 className="font-heading text-3xl font-bold uppercase text-tp-offwhite">{(event as TourEvent).name}</h1>

@@ -292,10 +292,12 @@ export async function uploadEventPhotos(eventId: string, formData: FormData) {
 
   let uploaded = 0;
   let failed = 0;
+  let firstError: string | null = null;
 
   for (const file of files) {
     if (!file.type.startsWith("image/") || file.size > MAX_PHOTO_BYTES) {
       failed++;
+      firstError ??= `${file.name}: too large or not a recognised image type`;
       continue;
     }
     const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
@@ -305,16 +307,28 @@ export async function uploadEventPhotos(eventId: string, formData: FormData) {
       .upload(path, file, { contentType: file.type });
     if (uploadError) {
       failed++;
+      firstError ??= `${file.name}: ${uploadError.message}`;
       continue;
     }
-    await supabase.from("event_photos").insert({ event_id: eventId, storage_path: path, sort_order: sortOrder });
+    const { error: insertError } = await supabase
+      .from("event_photos")
+      .insert({ event_id: eventId, storage_path: path, sort_order: sortOrder });
+    if (insertError) {
+      // The file made it to storage but the DB row failed — don't leave an
+      // orphaned, undeleteable-from-the-UI file behind.
+      await supabase.storage.from("event-photos").remove([path]);
+      failed++;
+      firstError ??= `${file.name}: ${insertError.message}`;
+      continue;
+    }
     sortOrder += 1;
     uploaded++;
   }
 
   revalidatePath(`/admin/events/${eventId}`);
   if (event) revalidatePath(`/events/${event.slug}`);
-  redirect(`/admin/events/${eventId}?photosUploaded=${uploaded}&photosFailed=${failed}`);
+  const errorParam = firstError ? `&photosError=${encodeURIComponent(firstError)}` : "";
+  redirect(`/admin/events/${eventId}?photosUploaded=${uploaded}&photosFailed=${failed}${errorParam}`);
 }
 
 export async function deleteEventPhoto(eventId: string, photoId: string, storagePath: string) {
