@@ -18,8 +18,15 @@ import {
 import { formatHandicap, formatDateTime, tbc } from "@/lib/format";
 import { INDUSTRY_OPTIONS } from "@/lib/types";
 
-export default async function AdminMemberDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function AdminMemberDetailPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ resendSuccess?: string; resendError?: string }>;
+}) {
   const { id } = await params;
+  const { resendSuccess, resendError } = await searchParams;
   const member = await getMemberAdmin(id);
   if (!member) notFound();
   const currentAdmin = await getCurrentProfile();
@@ -48,6 +55,17 @@ export default async function AdminMemberDetailPage({ params }: { params: Promis
         </div>
         <span className="text-xs font-semibold uppercase tracking-[0.1em] text-tp-gold">{member.status}</span>
       </div>
+
+      {resendSuccess && (
+        <div className="mt-6 border border-tp-green/40 bg-tp-green/10 px-5 py-3 text-sm text-tp-green-light">
+          Confirmation email sent.
+        </div>
+      )}
+      {resendError && (
+        <div className="mt-6 border border-red-500/40 bg-red-500/10 px-5 py-3 text-sm text-red-400">
+          Couldn&rsquo;t send the confirmation email: {resendError}
+        </div>
+      )}
 
       <div className="mt-8 flex flex-wrap gap-3">
         <form action={approveMember.bind(null, id)}>

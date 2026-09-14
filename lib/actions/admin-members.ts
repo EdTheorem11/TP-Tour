@@ -138,7 +138,9 @@ export async function updateMemberDetailsAdmin(memberId: string, formData: FormD
 export async function resendConfirmationEmailAdmin(memberId: string) {
   const { supabase, adminId } = await requireAdmin();
   const { data: member } = await supabase.from("member_profiles").select("email").eq("id", memberId).single();
-  if (!member) throw new Error("Member not found.");
+  if (!member) {
+    redirect(`/admin/members/${memberId}?resendError=${encodeURIComponent("Member not found.")}`);
+  }
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
   const { error } = await supabase.auth.resend({
@@ -146,10 +148,14 @@ export async function resendConfirmationEmailAdmin(memberId: string) {
     email: member.email,
     options: { emailRedirectTo: `${siteUrl}/confirm-email` },
   });
-  if (error) throw new Error(error.message);
+
+  if (error) {
+    redirect(`/admin/members/${memberId}?resendError=${encodeURIComponent(error.message)}`);
+  }
 
   await supabase.from("admin_audit_log").insert({ admin_id: adminId, action: "resend_confirmation_email", entity_type: "member_profiles", entity_id: memberId });
   revalidatePath(`/admin/members/${memberId}`);
+  redirect(`/admin/members/${memberId}?resendSuccess=1`);
 }
 
 export async function resendConfirmationEmailBulk() {
