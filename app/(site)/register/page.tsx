@@ -5,8 +5,8 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Container } from "@/components/ui/container";
-import { Button } from "@/components/ui/button";
-import { registerMember } from "@/lib/actions/auth";
+import { Button, LinkButton } from "@/components/ui/button";
+import { registerMember, resendConfirmationEmail } from "@/lib/actions/auth";
 import { INDUSTRY_OPTIONS } from "@/lib/types";
 
 const schema = z.object({
@@ -25,7 +25,6 @@ const schema = z.object({
   egfWhsNumber: z.string().optional(),
   linkedinUrl: z.string().optional(),
   termsAccepted: z.boolean().refine((v) => v, "You must accept the competition rules"),
-  privacyAccepted: z.boolean().refine((v) => v, "You must accept the privacy policy"),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -52,9 +51,13 @@ function Field({
   );
 }
 
+type ResendStatus = "idle" | "sending" | "sent" | "error";
+
 export default function RegisterPage() {
   const [serverError, setServerError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [registeredEmail, setRegisteredEmail] = useState<string | null>(null);
+  const [resendStatus, setResendStatus] = useState<ResendStatus>("idle");
 
   const {
     register,
@@ -62,7 +65,7 @@ export default function RegisterPage() {
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { termsAccepted: false, privacyAccepted: false },
+    defaultValues: { termsAccepted: false },
   });
 
   const onSubmit = async (values: FormValues) => {
@@ -72,7 +75,17 @@ export default function RegisterPage() {
     if (result?.error) {
       setServerError(result.error);
       setSubmitting(false);
+    } else {
+      setRegisteredEmail(values.email);
+      setSubmitting(false);
     }
+  };
+
+  const onResend = async () => {
+    if (!registeredEmail) return;
+    setResendStatus("sending");
+    const result = await resendConfirmationEmail(registeredEmail);
+    setResendStatus(result.error ? "error" : "sent");
   };
 
   return (
@@ -164,12 +177,6 @@ export default function RegisterPage() {
               I agree to the competition rules and terms.
             </label>
             {errors.termsAccepted && <p className="text-xs text-red-400">{errors.termsAccepted.message}</p>}
-
-            <label className="flex items-start gap-3 text-sm text-tp-offwhite/70">
-              <input type="checkbox" className="mt-0.5" {...register("privacyAccepted")} />
-              I agree to the privacy policy.
-            </label>
-            {errors.privacyAccepted && <p className="text-xs text-red-400">{errors.privacyAccepted.message}</p>}
           </div>
 
           {serverError && <p className="text-sm text-red-400">{serverError}</p>}
@@ -186,6 +193,44 @@ export default function RegisterPage() {
           </p>
         </form>
       </Container>
+
+      {registeredEmail && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+          <div className="w-full max-w-md border border-tp-green bg-tp-dark p-8 text-center">
+            <p className="text-xs font-semibold uppercase tracking-[0.35em] text-tp-gold">Welcome to TP Tour</p>
+            <h2 className="mt-4 font-heading text-3xl font-bold uppercase text-tp-offwhite">You&rsquo;re In</h2>
+            <p className="mt-4 text-tp-offwhite/60">
+              Thanks for joining TP Tour. Check your email (<span className="text-tp-offwhite">{registeredEmail}</span>)
+              to confirm your account, then you&rsquo;re ready to enter events and connect with other members.
+            </p>
+
+            <div className="mt-6 space-y-3">
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full"
+                disabled={resendStatus === "sending" || resendStatus === "sent"}
+                onClick={onResend}
+              >
+                {resendStatus === "sending"
+                  ? "Sending…"
+                  : resendStatus === "sent"
+                    ? "Confirmation Email Sent"
+                    : "Resend Confirmation Email"}
+              </Button>
+              {resendStatus === "error" && (
+                <p className="text-xs text-red-400">Couldn&rsquo;t resend the email — please try again shortly.</p>
+              )}
+            </div>
+
+            <div className="mt-5">
+              <LinkButton href="/" variant="gold" size="sm" className="w-full">
+                Back to Home
+              </LinkButton>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

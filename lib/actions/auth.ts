@@ -20,12 +20,11 @@ export interface RegisterInput {
   egfWhsNumber?: string;
   linkedinUrl?: string;
   termsAccepted: boolean;
-  privacyAccepted: boolean;
 }
 
-export async function registerMember(input: RegisterInput): Promise<{ error?: string }> {
-  if (!input.termsAccepted || !input.privacyAccepted) {
-    return { error: "You must accept the terms and privacy policy." };
+export async function registerMember(input: RegisterInput): Promise<{ error?: string; success?: boolean }> {
+  if (!input.termsAccepted) {
+    return { error: "You must accept the competition rules and terms." };
   }
 
   const supabase = await createClient();
@@ -50,14 +49,27 @@ export async function registerMember(input: RegisterInput): Promise<{ error?: st
         egf_whs_number: input.egfWhsNumber ?? null,
         linkedin_url: input.linkedinUrl ?? null,
         terms_accepted: input.termsAccepted,
-        privacy_accepted: input.privacyAccepted,
       },
     },
   });
 
   if (error) return { error: error.message };
 
-  redirect("/register/success");
+  return { success: true };
+}
+
+export async function resendConfirmationEmail(email: string): Promise<{ error?: string; success?: boolean }> {
+  const supabase = await createClient();
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+
+  const { error } = await supabase.auth.resend({
+    type: "signup",
+    email,
+    options: { emailRedirectTo: `${siteUrl}/confirm-email` },
+  });
+
+  if (error) return { error: error.message };
+  return { success: true };
 }
 
 // Called from the confirm-email page once the user has actually verified
