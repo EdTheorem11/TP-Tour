@@ -23,10 +23,10 @@ export default async function AdminMemberDetailPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ resendSuccess?: string; resendError?: string }>;
+  searchParams: Promise<{ resendSuccess?: string; resendError?: string; deleteError?: string }>;
 }) {
   const { id } = await params;
-  const { resendSuccess, resendError } = await searchParams;
+  const { resendSuccess, resendError, deleteError } = await searchParams;
   const member = await getMemberAdmin(id);
   if (!member) notFound();
   const currentAdmin = await getCurrentProfile();
@@ -64,6 +64,11 @@ export default async function AdminMemberDetailPage({
       {resendError && (
         <div className="mt-6 border border-red-500/40 bg-red-500/10 px-5 py-3 text-sm text-red-400">
           Couldn&rsquo;t send the confirmation email: {resendError}
+        </div>
+      )}
+      {deleteError && (
+        <div className="mt-6 border border-red-500/40 bg-red-500/10 px-5 py-3 text-sm text-red-400">
+          Couldn&rsquo;t delete this member: {deleteError}
         </div>
       )}
 

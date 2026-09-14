@@ -3,7 +3,7 @@ import { getAllMembersAdmin, getAllAuthActivity } from "@/lib/data/admin";
 import { inputClass } from "@/components/admin/form";
 import { ConfirmSubmitButton } from "@/components/admin/confirm-submit-button";
 import { ShareLinkButtons } from "@/components/ui/share-link-buttons";
-import { resendConfirmationEmailBulk } from "@/lib/actions/admin-members";
+import { resendConfirmationEmailBulk, resendConfirmationEmailFromList } from "@/lib/actions/admin-members";
 import { formatHandicap, formatDateTime, tbc } from "@/lib/format";
 import type { MemberProfile } from "@/lib/types";
 
@@ -38,7 +38,7 @@ function getSignupStats(members: MemberProfile[]) {
 export default async function AdminMembersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; resent?: string; resendFailed?: string }>;
+  searchParams: Promise<{ q?: string; resent?: string; resendFailed?: string; deleted?: string }>;
 }) {
   const params = await searchParams;
   const [members, allMembers, authActivity] = await Promise.all([
@@ -97,6 +97,11 @@ export default async function AdminMembersPage({
           )}
         </div>
       )}
+      {params.deleted && (
+        <div className="mt-6 border border-tp-green/40 bg-tp-green/10 px-5 py-3 text-sm text-tp-green-light">
+          Member deleted.
+        </div>
+      )}
 
       <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
         {signupStats.map((s) => (
@@ -146,7 +151,17 @@ export default async function AdminMembersPage({
                     {activity?.email_confirmed_at ? (
                       <span className="text-xs font-semibold uppercase tracking-[0.08em] text-tp-green-light">Confirmed</span>
                     ) : (
-                      <span className="text-xs font-semibold uppercase tracking-[0.08em] text-red-400">Not Confirmed</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-semibold uppercase tracking-[0.08em] text-red-400">Not Confirmed</span>
+                        <form action={resendConfirmationEmailFromList.bind(null, m.id)}>
+                          <button
+                            type="submit"
+                            className="border border-white/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.05em] text-tp-offwhite/70 hover:border-tp-gold hover:text-tp-gold"
+                          >
+                            Resend
+                          </button>
+                        </form>
+                      </div>
                     )}
                   </td>
                   <td className="py-3 pr-4 text-tp-offwhite/60">{formatDateTime(activity?.last_sign_in_at)}</td>

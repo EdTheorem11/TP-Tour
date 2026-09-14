@@ -158,6 +158,26 @@ export async function resendConfirmationEmailAdmin(memberId: string) {
   redirect(`/admin/members/${memberId}?resendSuccess=1`);
 }
 
+export async function resendConfirmationEmailFromList(memberId: string) {
+  const { supabase, adminId } = await requireAdmin();
+  const { data: member } = await supabase.from("member_profiles").select("email").eq("id", memberId).single();
+  if (!member) redirect("/admin/members?resent=0&resendFailed=1");
+
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+  const { error } = await supabase.auth.resend({
+    type: "signup",
+    email: member.email,
+    options: { emailRedirectTo: `${siteUrl}/confirm-email` },
+  });
+
+  if (!error) {
+    await supabase.from("admin_audit_log").insert({ admin_id: adminId, action: "resend_confirmation_email", entity_type: "member_profiles", entity_id: memberId });
+  }
+
+  revalidatePath("/admin/members");
+  redirect(error ? "/admin/members?resent=0&resendFailed=1" : "/admin/members?resent=1&resendFailed=0");
+}
+
 export async function resendConfirmationEmailBulk() {
   const { supabase, adminId } = await requireAdmin();
 
@@ -196,7 +216,9 @@ export async function resendConfirmationEmailBulk() {
 export async function deleteMember(memberId: string) {
   const { supabase, adminId } = await requireSuperAdmin();
   const admin = createAdminClient();
-  if (!admin) throw new Error("Server is missing SUPABASE_SERVICE_ROLE_KEY — cannot delete a member.");
+  if (!admin) {
+    redirect(`/admin/members/${memberId}?deleteError=${encodeURIComponent("Server is missing SUPABASE_SERVICE_ROLE_KEY — cannot delete a member.")}`);
+  }
 
   await supabase.from("admin_audit_log").insert({ admin_id: adminId, action: "delete_member", entity_type: "member_profiles", entity_id: memberId });
 
@@ -204,8 +226,10 @@ export async function deleteMember(memberId: string) {
   // references it (event_entries, event_scores, handicap_history, etc.) —
   // member_profiles.id is a foreign key to auth.users(id) on delete cascade.
   const { error } = await admin.auth.admin.deleteUser(memberId);
-  if (error) throw new Error(error.message);
+  if (error) {
+    redirect(`/admin/members/${memberId}?deleteError=${encodeURIComponent(error.message)}`);
+  }
 
   revalidatePath("/admin/members");
-  redirect("/admin/members");
+  redirect("/admin/members?deleted=1");
 }
