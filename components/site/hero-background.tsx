@@ -6,11 +6,13 @@ import { clsx } from "clsx";
 
 export function HeroBackground({
   src,
+  videoSrc,
   alt,
   children,
   className,
 }: {
   src: string;
+  videoSrc?: string;
   alt: string;
   children: ReactNode;
   className?: string;
@@ -39,7 +41,26 @@ export function HeroBackground({
         className="absolute inset-[-4%] transition-transform duration-500 ease-out will-change-transform"
         style={{ transform: `translate3d(${offset.x * -24}px, ${offset.y * -24}px, 0) scale(1.05)` }}
       >
-        <Image src={src} alt={alt} fill priority className="object-cover" />
+        <Image
+          src={src}
+          alt={alt}
+          fill
+          priority
+          className={clsx("object-cover", videoSrc && "sm:hidden")}
+        />
+        {videoSrc && (
+          <video
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="metadata"
+            poster={src}
+            className="absolute inset-0 hidden h-full w-full object-cover sm:block"
+          >
+            <source src={videoSrc} type="video/mp4" />
+          </video>
+        )}
       </div>
       <div className="absolute inset-0 bg-tp-black/55" />
       <div

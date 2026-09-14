@@ -14,7 +14,11 @@ export function Hero({
   const lines = heading.split(".").map((l) => l.trim()).filter(Boolean);
 
   return (
-    <HeroBackground src="/hero.png" alt="TP Tour — golf at sunrise with the Dubai skyline">
+    <HeroBackground
+      src="/hero.png"
+      videoSrc="/hero-video.mp4"
+      alt="TP Tour — golf at sunrise with the Dubai skyline"
+    >
       <Container className="py-32">
         <p className="mb-6 text-xs font-semibold uppercase tracking-[0.35em] text-tp-gold animate-reveal-up">
           {eyebrow}
