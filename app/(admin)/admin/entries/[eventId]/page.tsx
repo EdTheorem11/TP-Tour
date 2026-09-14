@@ -20,7 +20,19 @@ interface EntryRow {
   payment_status: string;
   payment_amount: number | null;
   entry_date: string;
+  is_guest: boolean;
+  guest_name: string | null;
+  playing_handicap: number | null;
   member_profiles: { first_name: string; last_name: string; company: string | null; current_handicap: number | null } | null;
+}
+
+function entryName(entry: EntryRow): string {
+  if (!entry.is_guest) return `${entry.member_profiles?.first_name ?? ""} ${entry.member_profiles?.last_name ?? ""}`.trim();
+  return `${entry.guest_name} (Guest of ${entry.member_profiles?.first_name} ${entry.member_profiles?.last_name})`;
+}
+
+function entryHandicap(entry: EntryRow): number | null {
+  return entry.is_guest ? entry.playing_handicap : (entry.member_profiles?.current_handicap ?? null);
 }
 
 interface WaitingRow {
@@ -101,11 +113,9 @@ export default async function AdminEntriesForEventPage({
             {confirmed.map((entry, i) => (
               <tr key={entry.id} className="border-b border-black/30">
                 <td className="py-2 pr-4">{i + 1}</td>
-                <td className="py-2 pr-4">
-                  {entry.member_profiles?.first_name} {entry.member_profiles?.last_name}
-                </td>
-                <td className="py-2 pr-4">{formatHandicap(entry.member_profiles?.current_handicap)}</td>
-                <td className="py-2 pr-4">{tbc(entry.member_profiles?.company)}</td>
+                <td className="py-2 pr-4">{entryName(entry)}</td>
+                <td className="py-2 pr-4">{formatHandicap(entryHandicap(entry))}</td>
+                <td className="py-2 pr-4">{entry.is_guest ? "—" : tbc(entry.member_profiles?.company)}</td>
                 <td className="py-2 pr-4">{entry.payment_status}</td>
               </tr>
             ))}
@@ -136,11 +146,9 @@ export default async function AdminEntriesForEventPage({
           <tbody>
             {confirmed.map((entry) => (
               <tr key={entry.id} className="border-b border-white/5">
-                <td className="py-3 pr-4 text-tp-offwhite">
-                  {entry.member_profiles?.first_name} {entry.member_profiles?.last_name}
-                </td>
-                <td className="py-3 pr-4 text-tp-offwhite/60">{formatHandicap(entry.member_profiles?.current_handicap)}</td>
-                <td className="py-3 pr-4 text-tp-offwhite/60">{tbc(entry.member_profiles?.company)}</td>
+                <td className="py-3 pr-4 text-tp-offwhite">{entryName(entry)}</td>
+                <td className="py-3 pr-4 text-tp-offwhite/60">{formatHandicap(entryHandicap(entry))}</td>
+                <td className="py-3 pr-4 text-tp-offwhite/60">{entry.is_guest ? "—" : tbc(entry.member_profiles?.company)}</td>
                 <td className="py-3 pr-4 text-tp-offwhite/60">{new Date(entry.entry_date).toLocaleDateString("en-GB")}</td>
                 <td className="py-3 pr-4">
                   <PaymentStatusSelect eventId={eventId} entryId={entry.id} defaultValue={entry.payment_status as PaymentStatus} />

@@ -3,10 +3,16 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Button, LinkButton } from "@/components/ui/button";
-import { enterEvent, joinEventWaitingList, withdrawFromEvent } from "@/lib/actions/events";
+import { enterEvent, joinEventWaitingList, withdrawFromEvent, addGuest } from "@/lib/actions/events";
 import type { MemberProfile } from "@/lib/types";
 
 type Stage = "idle" | "confirm" | "done";
+
+interface Guest {
+  id: string;
+  guest_name: string | null;
+  playing_handicap: number | null;
+}
 
 export function EntryPanel({
   eventId,
@@ -18,6 +24,7 @@ export function EntryPanel({
   existingEntry,
   waitingListEntry,
   spacesRemaining,
+  myGuests,
 }: {
   eventId: string;
   eventSlug: string;
@@ -28,12 +35,18 @@ export function EntryPanel({
   existingEntry: { id: string; status: string } | null;
   waitingListEntry: { id: string; position: number } | null;
   spacesRemaining: number | null;
+  myGuests: Guest[];
 }) {
   const router = useRouter();
   const [stage, setStage] = useState<Stage>("idle");
   const [agreed, setAgreed] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const [showGuestForm, setShowGuestForm] = useState(false);
+  const [guestName, setGuestName] = useState("");
+  const [guestHandicap, setGuestHandicap] = useState("");
+  const [guestError, setGuestError] = useState<string | null>(null);
+  const [guestPending, startGuestTransition] = useTransition();
 
   if (!isLoggedIn) {
     return (
@@ -70,6 +83,98 @@ export function EntryPanel({
         >
           {pending ? "Withdrawing…" : "Withdraw"}
         </Button>
+
+        <div className="mt-6 border-t border-tp-green/20 pt-6">
+          <p className="text-xs font-semibold uppercase tracking-[0.1em] text-tp-offwhite/50">Your Guests</p>
+
+          {myGuests.length > 0 && (
+            <ul className="mt-3 space-y-2">
+              {myGuests.map((guest) => (
+                <li key={guest.id} className="flex items-center justify-between gap-3 text-sm">
+                  <span className="text-tp-offwhite">
+                    {guest.guest_name}
+                    {guest.playing_handicap != null && (
+                      <span className="text-tp-offwhite/50"> &middot; Hcp {guest.playing_handicap}</span>
+                    )}
+                  </span>
+                  <button
+                    type="button"
+                    disabled={pending}
+                    className="text-xs uppercase tracking-[0.05em] text-red-400 hover:underline disabled:opacity-40"
+                    onClick={() =>
+                      startTransition(async () => {
+                        await withdrawFromEvent(eventSlug, guest.id);
+                        router.refresh();
+                      })
+                    }
+                  >
+                    Remove
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          {showGuestForm ? (
+            <div className="mt-4 space-y-3">
+              <input
+                type="text"
+                placeholder="Guest name"
+                value={guestName}
+                onChange={(e) => setGuestName(e.target.value)}
+                className="w-full border border-white/15 bg-tp-dark px-3 py-2 text-sm text-tp-offwhite placeholder:text-tp-offwhite/30 focus:border-tp-gold focus:outline-none"
+              />
+              <input
+                type="number"
+                step="0.1"
+                placeholder="Handicap (optional)"
+                value={guestHandicap}
+                onChange={(e) => setGuestHandicap(e.target.value)}
+                className="w-full border border-white/15 bg-tp-dark px-3 py-2 text-sm text-tp-offwhite placeholder:text-tp-offwhite/30 focus:border-tp-gold focus:outline-none"
+              />
+              {guestError && <p className="text-xs text-red-400">{guestError}</p>}
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={guestPending}
+                  onClick={() =>
+                    startGuestTransition(async () => {
+                      setGuestError(null);
+                      const result = await addGuest(
+                        eventSlug,
+                        eventId,
+                        guestName,
+                        guestHandicap.trim() === "" ? null : Number(guestHandicap),
+                      );
+                      if (result.error) {
+                        setGuestError(result.error);
+                        return;
+                      }
+                      setGuestName("");
+                      setGuestHandicap("");
+                      setShowGuestForm(false);
+                      router.refresh();
+                    })
+                  }
+                >
+                  {guestPending ? "Adding…" : "Add Guest"}
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => setShowGuestForm(false)}>
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setShowGuestForm(true)}
+              className="mt-3 text-sm text-tp-gold hover:underline"
+            >
+              + Add a Guest
+            </button>
+          )}
+        </div>
       </div>
     );
   }

@@ -203,7 +203,17 @@ export async function getEventEntryList(eventId: string) {
       .eq("event_id", eventId)
       .order("entry_date", { ascending: true });
     return data ?? [];
-  }, [] as Array<{ id: string; member_id: string; first_name: string; last_name: string; avatar_url: string | null; current_handicap: number | null; is_guest: boolean; guest_name: string | null }>);
+  }, [] as Array<{
+    id: string;
+    member_id: string;
+    first_name: string;
+    last_name: string;
+    avatar_url: string | null;
+    current_handicap: number | null;
+    is_guest: boolean;
+    guest_name: string | null;
+    playing_handicap: number | null;
+  }>);
 }
 
 export async function getMyEventEntry(eventId: string, memberId: string) {

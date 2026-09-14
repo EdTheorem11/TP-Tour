@@ -12,6 +12,7 @@ interface EntryRow {
   id: string;
   member_id: string;
   playing_handicap: number | null;
+  is_guest: boolean;
   member_profiles: { first_name: string; last_name: string; current_handicap: number | null } | null;
 }
 interface ScoreRow {
@@ -53,7 +54,9 @@ export default async function AdminScoringForEventPage({
 
   const scoreByMember = new Map(scores.map((s) => [s.member_id, s]));
   const isStrokeplay = event.format === "strokeplay";
-  const confirmedEntries = entries.filter((e) => e.member_profiles);
+  // Guests aren't scored — they'd collide on member_id (they share their
+  // host's) and have no path into the Order of Merit anyway.
+  const confirmedEntries = entries.filter((e) => e.member_profiles && !e.is_guest);
 
   return (
     <div>

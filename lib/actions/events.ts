@@ -51,6 +51,48 @@ export async function enterEvent(eventSlug: string, eventId: string): Promise<{ 
   return { success: true };
 }
 
+export async function addGuest(
+  eventSlug: string,
+  eventId: string,
+  guestName: string,
+  playingHandicap: number | null,
+): Promise<{ error?: string; success?: boolean }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return { error: "Please login to add a guest." };
+  if (!guestName.trim()) return { error: "Guest name is required." };
+
+  const { data: hostEntry } = await supabase
+    .from("event_entries")
+    .select("id")
+    .eq("event_id", eventId)
+    .eq("member_id", user.id)
+    .eq("is_guest", false)
+    .eq("status", "confirmed")
+    .maybeSingle();
+
+  if (!hostEntry) return { error: "You must be entered into this event before adding a guest." };
+
+  const { error } = await supabase.from("event_entries").insert({
+    event_id: eventId,
+    member_id: user.id,
+    is_guest: true,
+    guest_name: guestName.trim(),
+    playing_handicap: playingHandicap,
+    status: "confirmed",
+    agreed_to_rules: true,
+  });
+
+  if (error) return { error: error.message };
+
+  revalidatePath(`/events/${eventSlug}`);
+  revalidatePath("/my-tp-tour");
+  return { success: true };
+}
+
 export async function joinEventWaitingList(eventSlug: string, eventId: string): Promise<{ error?: string; success?: boolean }> {
   const supabase = await createClient();
   const {

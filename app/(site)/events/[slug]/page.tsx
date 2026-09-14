@@ -47,6 +47,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ sl
 
   const myEntry = profile ? await getMyEventEntry(event.id, profile.id) : null;
   const myWaitingListEntry = profile && !myEntry ? await getMyWaitingListEntry(event.id, profile.id) : null;
+  const myGuests = profile ? entryList.filter((e) => e.is_guest && e.member_id === profile.id) : [];
 
   const facts = [
     { label: "Date", value: formatEventDateLong(event.event_date) },
@@ -237,10 +238,16 @@ export default async function EventDetailPage({ params }: { params: Promise<{ sl
                   {entryList.map((entry) => (
                     <li key={entry.id} className="flex items-center justify-between py-3">
                       <span className="text-tp-offwhite">
-                        {entry.first_name} {entry.last_name}
-                        {entry.is_guest && <span className="ml-2 text-xs text-tp-offwhite/40">(Guest)</span>}
+                        {entry.is_guest ? entry.guest_name : `${entry.first_name} ${entry.last_name}`}
+                        {entry.is_guest && (
+                          <span className="ml-2 text-xs text-tp-offwhite/40">
+                            (Guest of {entry.first_name} {entry.last_name})
+                          </span>
+                        )}
                       </span>
-                      <span className="text-sm text-tp-offwhite/50">{formatHandicap(entry.current_handicap)}</span>
+                      <span className="text-sm text-tp-offwhite/50">
+                        {formatHandicap(entry.is_guest ? entry.playing_handicap : entry.current_handicap)}
+                      </span>
                     </li>
                   ))}
                 </ul>
@@ -260,6 +267,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ sl
               existingEntry={myEntry}
               waitingListEntry={myWaitingListEntry}
               spacesRemaining={capacity?.spaces_remaining ?? null}
+              myGuests={myGuests}
             />
           </div>
         </Container>
