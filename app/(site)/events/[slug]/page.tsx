@@ -253,7 +253,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ sl
               </div>
             )}
 
-            {entryList.length > 0 && (
+            {event.status !== "completed" && entryList.length > 0 && (
               <div className="mt-10">
                 <h2 className="font-heading text-xl font-bold uppercase text-tp-offwhite">
                   Current Entry List ({entryList.length})
