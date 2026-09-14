@@ -90,7 +90,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ sl
 
       <section className="py-16 lg:py-20">
         <Container className="grid gap-12 lg:grid-cols-[1.4fr_1fr]">
-          <div>
+          <div className="min-w-0">
             <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/10 shadow-xl shadow-black/30">
               <div className="grid grid-cols-2 gap-px sm:grid-cols-3">
                 {facts.map((fact, i) => (
