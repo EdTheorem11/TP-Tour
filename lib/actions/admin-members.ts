@@ -24,6 +24,13 @@ async function requireSuperAdmin() {
   return { supabase, adminId };
 }
 
+// redirect() works by throwing a special error Next.js's own router catches
+// further up — re-throw those untouched, or a legitimate redirect (success
+// or a handled ?error=...) would get swallowed as if it were a crash too.
+function isRedirectSignal(e: unknown): boolean {
+  return !!e && typeof e === "object" && "digest" in e && typeof (e as { digest?: unknown }).digest === "string" && (e as { digest: string }).digest.startsWith("NEXT_REDIRECT");
+}
+
 export async function setMemberStatus(memberId: string, status: MemberStatus, reason?: string) {
   const { supabase, adminId } = await requireAdmin();
   const { error } = await supabase
@@ -136,46 +143,57 @@ export async function updateMemberDetailsAdmin(memberId: string, formData: FormD
 }
 
 export async function resendConfirmationEmailAdmin(memberId: string) {
-  const { supabase, adminId } = await requireAdmin();
-  const { data: member } = await supabase.from("member_profiles").select("email").eq("id", memberId).single();
-  if (!member) {
-    redirect(`/admin/members/${memberId}?resendError=${encodeURIComponent("Member not found.")}`);
+  try {
+    const { supabase, adminId } = await requireAdmin();
+    const { data: member } = await supabase.from("member_profiles").select("email").eq("id", memberId).single();
+    if (!member) {
+      redirect(`/admin/members/${memberId}?resendError=${encodeURIComponent("Member not found.")}`);
+    }
+
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+    const { error } = await supabase.auth.resend({
+      type: "signup",
+      email: member.email,
+      options: { emailRedirectTo: `${siteUrl}/confirm-email` },
+    });
+
+    if (error) {
+      redirect(`/admin/members/${memberId}?resendError=${encodeURIComponent(error.message)}`);
+    }
+
+    await supabase.from("admin_audit_log").insert({ admin_id: adminId, action: "resend_confirmation_email", entity_type: "member_profiles", entity_id: memberId });
+    revalidatePath(`/admin/members/${memberId}`);
+    redirect(`/admin/members/${memberId}?resendSuccess=1`);
+  } catch (e) {
+    if (isRedirectSignal(e)) throw e;
+    const message = e instanceof Error ? e.message : "Unknown error.";
+    redirect(`/admin/members/${memberId}?resendError=${encodeURIComponent(message)}`);
   }
-
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
-  const { error } = await supabase.auth.resend({
-    type: "signup",
-    email: member.email,
-    options: { emailRedirectTo: `${siteUrl}/confirm-email` },
-  });
-
-  if (error) {
-    redirect(`/admin/members/${memberId}?resendError=${encodeURIComponent(error.message)}`);
-  }
-
-  await supabase.from("admin_audit_log").insert({ admin_id: adminId, action: "resend_confirmation_email", entity_type: "member_profiles", entity_id: memberId });
-  revalidatePath(`/admin/members/${memberId}`);
-  redirect(`/admin/members/${memberId}?resendSuccess=1`);
 }
 
 export async function resendConfirmationEmailFromList(memberId: string) {
-  const { supabase, adminId } = await requireAdmin();
-  const { data: member } = await supabase.from("member_profiles").select("email").eq("id", memberId).single();
-  if (!member) redirect("/admin/members?resent=0&resendFailed=1");
+  try {
+    const { supabase, adminId } = await requireAdmin();
+    const { data: member } = await supabase.from("member_profiles").select("email").eq("id", memberId).single();
+    if (!member) redirect("/admin/members?resent=0&resendFailed=1");
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
-  const { error } = await supabase.auth.resend({
-    type: "signup",
-    email: member.email,
-    options: { emailRedirectTo: `${siteUrl}/confirm-email` },
-  });
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+    const { error } = await supabase.auth.resend({
+      type: "signup",
+      email: member.email,
+      options: { emailRedirectTo: `${siteUrl}/confirm-email` },
+    });
 
-  if (!error) {
-    await supabase.from("admin_audit_log").insert({ admin_id: adminId, action: "resend_confirmation_email", entity_type: "member_profiles", entity_id: memberId });
+    if (!error) {
+      await supabase.from("admin_audit_log").insert({ admin_id: adminId, action: "resend_confirmation_email", entity_type: "member_profiles", entity_id: memberId });
+    }
+
+    revalidatePath("/admin/members");
+    redirect(error ? "/admin/members?resent=0&resendFailed=1" : "/admin/members?resent=1&resendFailed=0");
+  } catch (e) {
+    if (isRedirectSignal(e)) throw e;
+    redirect("/admin/members?resent=0&resendFailed=1");
   }
-
-  revalidatePath("/admin/members");
-  redirect(error ? "/admin/members?resent=0&resendFailed=1" : "/admin/members?resent=1&resendFailed=0");
 }
 
 export async function resendConfirmationEmailBulk() {
@@ -214,22 +232,29 @@ export async function resendConfirmationEmailBulk() {
 }
 
 export async function deleteMember(memberId: string) {
-  const { supabase, adminId } = await requireSuperAdmin();
-  const admin = createAdminClient();
-  if (!admin) {
-    redirect(`/admin/members/${memberId}?deleteError=${encodeURIComponent("Server is missing SUPABASE_SERVICE_ROLE_KEY — cannot delete a member.")}`);
+  try {
+    const { supabase, adminId } = await requireSuperAdmin();
+    const admin = createAdminClient();
+    if (!admin) {
+      redirect(`/admin/members/${memberId}?deleteError=${encodeURIComponent("Server is missing SUPABASE_SERVICE_ROLE_KEY — cannot delete a member.")}`);
+    }
+
+    await supabase.from("admin_audit_log").insert({ admin_id: adminId, action: "delete_member", entity_type: "member_profiles", entity_id: memberId });
+
+    // Deleting the auth user cascades to member_profiles and every table
+    // that references it (event_entries, event_scores, handicap_history,
+    // etc.) — member_profiles.id is a foreign key to auth.users(id) on
+    // delete cascade.
+    const { error } = await admin.auth.admin.deleteUser(memberId);
+    if (error) {
+      redirect(`/admin/members/${memberId}?deleteError=${encodeURIComponent(error.message)}`);
+    }
+
+    revalidatePath("/admin/members");
+    redirect("/admin/members?deleted=1");
+  } catch (e) {
+    if (isRedirectSignal(e)) throw e;
+    const message = e instanceof Error ? e.message : "Unknown error.";
+    redirect(`/admin/members/${memberId}?deleteError=${encodeURIComponent(message)}`);
   }
-
-  await supabase.from("admin_audit_log").insert({ admin_id: adminId, action: "delete_member", entity_type: "member_profiles", entity_id: memberId });
-
-  // Deleting the auth user cascades to member_profiles and every table that
-  // references it (event_entries, event_scores, handicap_history, etc.) —
-  // member_profiles.id is a foreign key to auth.users(id) on delete cascade.
-  const { error } = await admin.auth.admin.deleteUser(memberId);
-  if (error) {
-    redirect(`/admin/members/${memberId}?deleteError=${encodeURIComponent(error.message)}`);
-  }
-
-  revalidatePath("/admin/members");
-  redirect("/admin/members?deleted=1");
 }
