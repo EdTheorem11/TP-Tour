@@ -9,9 +9,10 @@ const nextConfig: NextConfig = {
   },
   experimental: {
     serverActions: {
-      // Default is 1MB, too small for photo uploads (avatar up to 5MB,
-      // and the event gallery accepts several images per submission).
-      bodySizeLimit: "20mb",
+      // Default is 1MB, too small for photo uploads (avatar up to 5MB;
+      // the event gallery accepts several images per submission, each up
+      // to 20MB, so the total needs real headroom above that).
+      bodySizeLimit: "50mb",
     },
   },
 };

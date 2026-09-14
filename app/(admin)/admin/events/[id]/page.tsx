@@ -20,10 +20,10 @@ export default async function EditEventPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ saved?: string }>;
+  searchParams: Promise<{ saved?: string; photosUploaded?: string; photosFailed?: string }>;
 }) {
   const { id } = await params;
-  const { saved } = await searchParams;
+  const { saved, photosUploaded, photosFailed } = await searchParams;
   const supabase = await createClient();
   const { data: event } = await supabase.from("events").select("*").eq("id", id).single();
   if (!event) notFound();
@@ -47,6 +47,23 @@ export default async function EditEventPage({
       {saved === "1" && (
         <div className="mb-6 border border-tp-green/40 bg-tp-green/10 px-5 py-3 text-sm text-tp-green-light">
           Changes saved.
+        </div>
+      )}
+      {photosUploaded !== undefined && (
+        <div
+          className={`mb-6 border px-5 py-3 text-sm ${
+            photosFailed && photosFailed !== "0"
+              ? "border-tp-gold/40 bg-tp-gold/10 text-tp-gold"
+              : "border-tp-green/40 bg-tp-green/10 text-tp-green-light"
+          }`}
+        >
+          Uploaded {photosUploaded} photo{photosUploaded === "1" ? "" : "s"}.
+          {photosFailed && photosFailed !== "0" && (
+            <span className="block">
+              {photosFailed} photo{photosFailed === "1" ? "" : "s"} couldn&rsquo;t be uploaded — each photo must be
+              under 15MB and a recognised image format (JPG, PNG, etc).
+            </span>
+          )}
         </div>
       )}
 

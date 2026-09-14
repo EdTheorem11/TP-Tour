@@ -272,7 +272,11 @@ export async function addCourseToClub(golfClubId: string, formData: FormData) {
 // Event photo gallery
 // ---------------------------------------------------------------------------
 
-const MAX_PHOTO_BYTES = 8 * 1024 * 1024;
+// Modern phone cameras routinely produce 10-15MB photos — the old 8MB cap
+// silently dropped those (and any storage error was swallowed too), so an
+// admin uploading a full album of event-day photos could see "Changes
+// saved" while nothing actually made it in.
+const MAX_PHOTO_BYTES = 15 * 1024 * 1024;
 
 export async function uploadEventPhotos(eventId: string, formData: FormData) {
   const { supabase } = await requireAdmin();
@@ -286,21 +290,31 @@ export async function uploadEventPhotos(eventId: string, formData: FormData) {
     .eq("event_id", eventId);
   let sortOrder = count ?? 0;
 
+  let uploaded = 0;
+  let failed = 0;
+
   for (const file of files) {
-    if (!file.type.startsWith("image/") || file.size > MAX_PHOTO_BYTES) continue;
+    if (!file.type.startsWith("image/") || file.size > MAX_PHOTO_BYTES) {
+      failed++;
+      continue;
+    }
     const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
     const path = `${eventId}/${crypto.randomUUID()}.${ext}`;
     const { error: uploadError } = await supabase.storage
       .from("event-photos")
       .upload(path, file, { contentType: file.type });
-    if (uploadError) continue;
+    if (uploadError) {
+      failed++;
+      continue;
+    }
     await supabase.from("event_photos").insert({ event_id: eventId, storage_path: path, sort_order: sortOrder });
     sortOrder += 1;
+    uploaded++;
   }
 
   revalidatePath(`/admin/events/${eventId}`);
   if (event) revalidatePath(`/events/${event.slug}`);
-  redirect(`/admin/events/${eventId}?saved=1`);
+  redirect(`/admin/events/${eventId}?photosUploaded=${uploaded}&photosFailed=${failed}`);
 }
 
 export async function deleteEventPhoto(eventId: string, photoId: string, storagePath: string) {
