@@ -194,13 +194,30 @@ export default async function EventDetailPage({ params }: { params: Promise<{ sl
 
             {partners.length > 0 && (
               <div className="mt-10">
-                <h2 className="font-heading text-xl font-bold uppercase text-tp-offwhite">Sponsor</h2>
-                <div className="mt-3 flex flex-wrap gap-6">
-                  {partners.map((p) => (
-                    <span key={p.id} className="text-tp-offwhite/70">
-                      {p.name}
-                    </span>
-                  ))}
+                <h2 className="font-heading text-xl font-bold uppercase text-tp-offwhite">
+                  {partners.length > 1 ? "Sponsors" : "Sponsor"}
+                </h2>
+                <div className="mt-3 flex flex-wrap items-center gap-4">
+                  {partners.map((p) =>
+                    p.logo_url ? (
+                      <div
+                        key={p.id}
+                        className="flex items-center justify-center rounded-sm bg-tp-offwhite px-6 py-4"
+                      >
+                        <Image
+                          src={p.logo_url}
+                          alt={p.name}
+                          width={140}
+                          height={56}
+                          className="h-8 w-auto object-contain"
+                        />
+                      </div>
+                    ) : (
+                      <span key={p.id} className="text-tp-offwhite/70">
+                        {p.name}
+                      </span>
+                    ),
+                  )}
                 </div>
               </div>
             )}

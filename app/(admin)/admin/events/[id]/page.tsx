@@ -59,7 +59,7 @@ export default async function EditEventPage({
       </div>
 
       <div className="mt-8 max-w-3xl">
-        <EventForm action={boundUpdate} event={event as TourEvent} seasons={seasons} golfClubs={golfClubs} partners={partners} submitLabel="Save Changes" />
+        <EventForm action={boundUpdate} event={event as TourEvent} seasons={seasons} golfClubs={golfClubs} submitLabel="Save Changes" />
       </div>
 
       <div className="mt-12 max-w-3xl border-t border-white/10 pt-8">

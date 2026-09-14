@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Field, inputClass } from "@/components/admin/form";
-import { FORMAT_LABELS, STATUS_LABELS, type TourEvent, type Season, type Partner } from "@/lib/types";
+import { FORMAT_LABELS, STATUS_LABELS, type TourEvent, type Season } from "@/lib/types";
 import type { GolfClub, Course } from "@/lib/types";
 
 export function EventForm({
@@ -8,14 +8,12 @@ export function EventForm({
   event,
   seasons,
   golfClubs,
-  partners,
   submitLabel,
 }: {
   action: (formData: FormData) => void;
   event?: TourEvent;
   seasons: Season[];
   golfClubs: (GolfClub & { courses: Course[] })[];
-  partners: Partner[];
   submitLabel: string;
 }) {
   const selectedClub = golfClubs.find((c) => c.id === event?.golf_club_id);
@@ -86,14 +84,6 @@ export function EventForm({
         </Field>
         <Field label="Handicap Allowance">
           <input name="handicap_allowance" defaultValue={event?.handicap_allowance ?? ""} className={inputClass} />
-        </Field>
-        <Field label="Sponsor">
-          <select name="sponsor_id" defaultValue={event?.sponsor_id ?? ""} className={inputClass}>
-            <option value="">None</option>
-            {partners.map((p) => (
-              <option key={p.id} value={p.id}>{p.name}</option>
-            ))}
-          </select>
         </Field>
         <Field label="Status">
           <select name="status" defaultValue={event?.status ?? "draft"} className={inputClass}>

@@ -127,7 +127,6 @@ export interface TourEvent {
   handicap_allowance: string | null;
   oom_eligible: boolean;
   is_major: boolean;
-  sponsor_id: string | null;
   status: EventStatus;
   results_published: boolean;
   results_published_at: string | null;

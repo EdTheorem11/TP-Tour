@@ -65,7 +65,6 @@ export async function createEvent(formData: FormData) {
       handicap_allowance: str(formData, "handicap_allowance"),
       oom_eligible: formData.get("oom_eligible") === "on",
       is_major: formData.get("is_major") === "on",
-      sponsor_id: str(formData, "sponsor_id"),
       status: str(formData, "status") ?? "draft",
       created_by: adminId,
     })
@@ -109,7 +108,6 @@ export async function updateEvent(eventId: string, formData: FormData) {
     handicap_allowance: str(formData, "handicap_allowance"),
     oom_eligible: formData.get("oom_eligible") === "on",
     is_major: formData.get("is_major") === "on",
-    sponsor_id: str(formData, "sponsor_id"),
     status: str(formData, "status"),
   };
 
