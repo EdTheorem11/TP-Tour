@@ -46,6 +46,7 @@ export async function sendAnnouncement(formData: FormData) {
       .from("event_entries")
       .select("member_profiles(email, first_name)")
       .eq("event_id", audience)
+      .eq("is_guest", false)
       .eq("status", "confirmed");
     recipients = ((data ?? []) as unknown as Array<{ member_profiles: { email: string; first_name: string } | null }>)
       .map((r) => r.member_profiles)

@@ -67,8 +67,9 @@ export function EntryPanel({
   if (existingEntry) {
     return (
       <div id="enter" className="border border-tp-green bg-tp-green/10 p-8 scroll-mt-24">
-        <p className="font-heading text-xl font-bold uppercase text-tp-green-light">You&rsquo;re on the Tee Sheet.</p>
-        <p className="mt-2 text-sm text-tp-offwhite/60">You are entered into {eventName}.</p>
+        <p className="font-heading text-xl font-bold uppercase text-tp-green-light">
+          You are in {eventName} on {eventDate}.
+        </p>
         <Button
           variant="outline"
           size="sm"

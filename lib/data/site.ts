@@ -224,6 +224,7 @@ export async function getMyEventEntry(eventId: string, memberId: string) {
       .select("*")
       .eq("event_id", eventId)
       .eq("member_id", memberId)
+      .eq("is_guest", false)
       .neq("status", "withdrawn")
       .maybeSingle();
     return data ?? null;
@@ -344,6 +345,7 @@ export async function getMyNextEntry(memberId: string) {
       .from("event_entries")
       .select("*, events(id, name, slug, event_date, location, first_tee_time, shotgun_time, format, status)")
       .eq("member_id", memberId)
+      .eq("is_guest", false)
       .eq("status", "confirmed")
       .gte("events.event_date", new Date().toISOString().slice(0, 10))
       .order("events(event_date)", { ascending: true })
