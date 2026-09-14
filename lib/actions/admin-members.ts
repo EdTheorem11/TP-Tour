@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getAllAuthActivity } from "@/lib/data/admin";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import type { MemberStatus, UserRole } from "@/lib/types";
@@ -132,6 +133,58 @@ export async function updateMemberDetailsAdmin(memberId: string, formData: FormD
   if (error) throw new Error(error.message);
   await supabase.from("admin_audit_log").insert({ admin_id: adminId, action: "edit_member", entity_type: "member_profiles", entity_id: memberId });
   revalidatePath(`/admin/members/${memberId}`);
+}
+
+export async function resendConfirmationEmailAdmin(memberId: string) {
+  const { supabase, adminId } = await requireAdmin();
+  const { data: member } = await supabase.from("member_profiles").select("email").eq("id", memberId).single();
+  if (!member) throw new Error("Member not found.");
+
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+  const { error } = await supabase.auth.resend({
+    type: "signup",
+    email: member.email,
+    options: { emailRedirectTo: `${siteUrl}/confirm-email` },
+  });
+  if (error) throw new Error(error.message);
+
+  await supabase.from("admin_audit_log").insert({ admin_id: adminId, action: "resend_confirmation_email", entity_type: "member_profiles", entity_id: memberId });
+  revalidatePath(`/admin/members/${memberId}`);
+}
+
+export async function resendConfirmationEmailBulk() {
+  const { supabase, adminId } = await requireAdmin();
+
+  const [{ data: members }, authActivity] = await Promise.all([
+    supabase.from("member_profiles").select("id, email"),
+    getAllAuthActivity(),
+  ]);
+  const unconfirmedEmails = (members ?? [])
+    .filter((m) => !authActivity.get(m.id)?.email_confirmed_at)
+    .map((m) => m.email);
+
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+  let sent = 0;
+  let failed = 0;
+  for (const email of unconfirmedEmails) {
+    const { error } = await supabase.auth.resend({
+      type: "signup",
+      email,
+      options: { emailRedirectTo: `${siteUrl}/confirm-email` },
+    });
+    if (error) failed++;
+    else sent++;
+  }
+
+  await supabase.from("admin_audit_log").insert({
+    admin_id: adminId,
+    action: "resend_confirmation_bulk",
+    entity_type: "member_profiles",
+    after: { sent, failed, total: unconfirmedEmails.length },
+  });
+
+  revalidatePath("/admin/members");
+  redirect(`/admin/members?resent=${sent}&resendFailed=${failed}`);
 }
 
 export async function deleteMember(memberId: string) {

@@ -1,9 +1,15 @@
 import Link from "next/link";
 import { getAllMembersAdmin, getAllAuthActivity } from "@/lib/data/admin";
 import { inputClass } from "@/components/admin/form";
+import { ConfirmSubmitButton } from "@/components/admin/confirm-submit-button";
 import { ShareLinkButtons } from "@/components/ui/share-link-buttons";
+import { resendConfirmationEmailBulk } from "@/lib/actions/admin-members";
 import { formatHandicap, formatDateTime, tbc } from "@/lib/format";
 import type { MemberProfile } from "@/lib/types";
+
+// The bulk resend below can loop over many members sequentially — give it
+// more room than the platform default so it doesn't get killed mid-batch.
+export const maxDuration = 60;
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3010";
 const REGISTER_URL = `${SITE_URL}/register`;
@@ -29,7 +35,11 @@ function getSignupStats(members: MemberProfile[]) {
   ];
 }
 
-export default async function AdminMembersPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
+export default async function AdminMembersPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string; resent?: string; resendFailed?: string }>;
+}) {
   const params = await searchParams;
   const [members, allMembers, authActivity] = await Promise.all([
     getAllMembersAdmin(params.q),
@@ -38,12 +48,24 @@ export default async function AdminMembersPage({ searchParams }: { searchParams:
   ]);
 
   const signupStats = getSignupStats(allMembers);
+  const unconfirmedCount = allMembers.filter((m) => !authActivity.get(m.id)?.email_confirmed_at).length;
 
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-4">
         <h1 className="font-heading text-3xl font-bold uppercase text-tp-offwhite">Members</h1>
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-3">
+          {unconfirmedCount > 0 && (
+            <form action={resendConfirmationEmailBulk}>
+              <ConfirmSubmitButton
+                variant="outline"
+                size="sm"
+                confirmText={`Resend the confirmation email to all ${unconfirmedCount} unconfirmed member${unconfirmedCount === 1 ? "" : "s"}?`}
+              >
+                Resend to {unconfirmedCount} Unconfirmed
+              </ConfirmSubmitButton>
+            </form>
+          )}
           <details className="group relative">
             <summary className="flex cursor-pointer list-none items-center border border-white/15 px-4 py-2 text-xs font-semibold uppercase tracking-[0.1em] text-tp-offwhite/80 hover:border-tp-gold hover:text-tp-gold [&::-webkit-details-marker]:hidden">
               + Add Member
@@ -66,6 +88,15 @@ export default async function AdminMembersPage({ searchParams }: { searchParams:
           </a>
         </div>
       </div>
+
+      {params.resent !== undefined && (
+        <div className="mt-6 border border-tp-green/40 bg-tp-green/10 px-5 py-3 text-sm text-tp-green-light">
+          Resent confirmation email to {params.resent} member{params.resent === "1" ? "" : "s"}.
+          {params.resendFailed && params.resendFailed !== "0" && (
+            <span className="block text-tp-gold">Failed for {params.resendFailed} — check Supabase's auth rate limits if this keeps happening.</span>
+          )}
+        </div>
+      )}
 
       <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
         {signupStats.map((s) => (

@@ -12,6 +12,7 @@ import {
   adminAdjustHandicap,
   approveHandicapChange,
   updateMemberDetailsAdmin,
+  resendConfirmationEmailAdmin,
   deleteMember,
 } from "@/lib/actions/admin-members";
 import { formatHandicap, formatDateTime, tbc } from "@/lib/format";
@@ -71,7 +72,14 @@ export default async function AdminMemberDetailPage({ params }: { params: Promis
                   Confirmed &middot; {formatDateTime(authActivity.email_confirmed_at)}
                 </span>
               ) : (
-                <span className="text-sm font-semibold text-red-400">Not Confirmed</span>
+                <div className="flex items-center gap-3">
+                  <span className="text-sm font-semibold text-red-400">Not Confirmed</span>
+                  <form action={resendConfirmationEmailAdmin.bind(null, id)}>
+                    <button type="submit" className="text-xs text-tp-gold hover:underline">
+                      Resend Confirmation Email
+                    </button>
+                  </form>
+                </div>
               )}
             </dd>
           </div>
