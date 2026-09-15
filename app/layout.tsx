@@ -15,13 +15,16 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "https://tptour.ae"),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "https://tptourgolf.com"),
   title: {
     default: "TP Tour | UAE Finance & Crypto Golf Society",
     template: "%s | TP Tour",
   },
   description:
     "TP Tour is the UAE's leading golf society for professionals across Finance, Crypto, Digital Assets and FinTech. Play competitive golf at some of Dubai and Abu Dhabi's best courses.",
+  appleWebApp: {
+    title: "TP Tour",
+  },
   openGraph: {
     title: "TP Tour | UAE Finance & Crypto Golf Society",
     description:
