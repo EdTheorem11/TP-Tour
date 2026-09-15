@@ -79,6 +79,17 @@ async function send(to: string, subject: string, html: string): Promise<{ error?
   }
 }
 
+export async function sendMemberInviteEmail(to: string) {
+  const html = wrapper(
+    `<h1 style="font-size:22px;margin:0 0 16px;">You&rsquo;re Invited to TP Tour</h1>
+     <p>You&rsquo;ve been invited to join TP Tour — the UAE&rsquo;s golf society for professionals across Finance, Crypto, Digital Assets and FinTech. Click below to create your account.</p>
+     ${button("Create Your Account", `${SITE_URL}/register`)}
+     <p style="margin-top:28px;font-size:12px;color:rgba(244,241,233,0.4);">If you weren&rsquo;t expecting this, you can safely ignore this email.</p>`,
+    "You've been invited to join TP Tour.",
+  );
+  return send(to, "You're Invited to TP Tour", html);
+}
+
 export async function sendWelcomeEmail(to: string, firstName: string) {
   const html = wrapper(
     `<h1 style="font-size:22px;margin:0 0 16px;">Welcome to TP Tour, ${firstName}.</h1>

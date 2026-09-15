@@ -6,7 +6,7 @@ import { getAllAuthActivity } from "@/lib/data/admin";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import type { MemberStatus, UserRole } from "@/lib/types";
-import { sendMembershipApprovedEmail, sendMembershipRejectedEmail, sendHandicapUpdatedEmail } from "@/lib/email";
+import { sendMembershipApprovedEmail, sendMembershipRejectedEmail, sendHandicapUpdatedEmail, sendMemberInviteEmail } from "@/lib/email";
 
 async function requireAdmin() {
   const supabase = await createClient();
@@ -140,6 +140,33 @@ export async function updateMemberDetailsAdmin(memberId: string, formData: FormD
   if (error) throw new Error(error.message);
   await supabase.from("admin_audit_log").insert({ admin_id: adminId, action: "edit_member", entity_type: "member_profiles", entity_id: memberId });
   revalidatePath(`/admin/members/${memberId}`);
+}
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+// Emails a "create your account" link directly, rather than the admin
+// having to copy/paste and send the share link themselves.
+export async function inviteMemberByEmail(email: string): Promise<{ error?: string }> {
+  try {
+    const { supabase, adminId } = await requireAdmin();
+    const trimmed = email.trim().toLowerCase();
+    if (!EMAIL_RE.test(trimmed)) return { error: "Enter a valid email address." };
+
+    const { data: existing } = await supabase
+      .from("member_profiles")
+      .select("id")
+      .eq("email", trimmed)
+      .maybeSingle();
+    if (existing) return { error: "This email already has a TP Tour account." };
+
+    const { error } = await sendMemberInviteEmail(trimmed);
+    if (error) return { error };
+
+    await supabase.from("admin_audit_log").insert({ admin_id: adminId, action: "invite_member", entity_type: "member_profiles" });
+    return {};
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Unknown error." };
+  }
 }
 
 export async function resendConfirmationEmailAdmin(memberId: string) {

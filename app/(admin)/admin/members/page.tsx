@@ -5,6 +5,7 @@ import { ConfirmSubmitButton } from "@/components/admin/confirm-submit-button";
 import { ShareLinkButtons } from "@/components/ui/share-link-buttons";
 import { AutoToast } from "@/components/admin/auto-toast";
 import { MemberResendButton } from "@/components/admin/member-resend-button";
+import { InviteMemberForm } from "@/components/admin/invite-member-form";
 import { resendConfirmationEmailBulk } from "@/lib/actions/admin-members";
 import { formatHandicap, formatDateTime, tbc } from "@/lib/format";
 import type { MemberProfile } from "@/lib/types";
@@ -70,15 +71,21 @@ export default async function AdminMembersPage({
           )}
           <details className="group relative">
             <summary className="flex cursor-pointer list-none items-center border border-white/15 px-4 py-2 text-xs font-semibold uppercase tracking-[0.1em] text-tp-offwhite/80 hover:border-tp-gold hover:text-tp-gold [&::-webkit-details-marker]:hidden">
-              + Add Member
+              + Invite Member
             </summary>
             <div className="absolute right-0 z-10 mt-2 w-80 border border-white/15 bg-tp-dark p-5">
               <p className="text-xs text-tp-offwhite/50">
-                Send this registration link to invite someone to join &mdash; they sign up and set their own
-                password, no need to create an account for them.
+                Email someone a link to create their own account &mdash; no need to set anything up for them.
               </p>
-              <div className="mt-4">
-                <ShareLinkButtons url={REGISTER_URL} message={REGISTER_MESSAGE} emailSubject="You're invited to join TP Tour" />
+              <InviteMemberForm />
+
+              <div className="mt-5 border-t border-white/10 pt-4">
+                <p className="text-xs text-tp-offwhite/50">
+                  Or share this registration link directly (WhatsApp, copy/paste, etc):
+                </p>
+                <div className="mt-3">
+                  <ShareLinkButtons url={REGISTER_URL} message={REGISTER_MESSAGE} emailSubject="You're invited to join TP Tour" />
+                </div>
               </div>
             </div>
           </details>
