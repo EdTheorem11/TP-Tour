@@ -3,7 +3,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { sendEventEntryConfirmedEmail, sendWaitingListConfirmedEmail } from "@/lib/email";
-import { formatEventDateLong } from "@/lib/format";
 
 export async function enterEvent(eventSlug: string, eventId: string): Promise<{ error?: string; success?: boolean }> {
   const supabase = await createClient();
@@ -15,7 +14,7 @@ export async function enterEvent(eventSlug: string, eventId: string): Promise<{ 
 
   const { data: profile } = await supabase
     .from("member_profiles")
-    .select("email, first_name, status, current_handicap")
+    .select("email, first_name, last_name, status, current_handicap")
     .eq("id", user.id)
     .single();
 
@@ -25,7 +24,7 @@ export async function enterEvent(eventSlug: string, eventId: string): Promise<{ 
 
   const { data: event } = await supabase
     .from("events")
-    .select("name, event_date, member_price")
+    .select("id, slug, name, event_date, location, arrival_time, first_tee_time, shotgun_time, member_price")
     .eq("id", eventId)
     .single();
 
@@ -43,7 +42,7 @@ export async function enterEvent(eventSlug: string, eventId: string): Promise<{ 
   if (error) return { error: error.code === "23505" ? "You're already entered in this event." : error.message };
 
   if (event) {
-    await sendEventEntryConfirmedEmail(profile.email, profile.first_name, event.name, formatEventDateLong(event.event_date), eventSlug);
+    await sendEventEntryConfirmedEmail(profile.email, profile.first_name, `${profile.first_name} ${profile.last_name}`, event);
   }
 
   revalidatePath(`/events/${eventSlug}`);

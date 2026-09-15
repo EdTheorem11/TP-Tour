@@ -1,5 +1,6 @@
 import { Resend } from "resend";
-import { formatHandicap } from "@/lib/format";
+import { formatHandicap, formatEventDateLong } from "@/lib/format";
+import { buildIcsInvite, type IcsEvent } from "@/lib/ics";
 
 const FROM = process.env.RESEND_FROM_EMAIL || "TP Tour <onboarding@resend.dev>";
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://tptourgolf.com";
@@ -11,6 +12,27 @@ function isEmailConfigured(): boolean {
 function getClient(): Resend | null {
   if (!isEmailConfigured()) return null;
   return new Resend(process.env.RESEND_API_KEY);
+}
+
+function getOrganizer(): { name: string; email: string } {
+  const match = FROM.match(/^(.*)<(.+)>$/);
+  if (!match) return { name: "TP Tour", email: FROM };
+  return { name: match[1].trim(), email: match[2].trim() };
+}
+
+interface EmailAttachment {
+  filename: string;
+  content: string;
+  contentType: string;
+}
+
+function icsAttachment(event: IcsEvent, attendeeName: string, attendeeEmail: string): EmailAttachment {
+  const ics = buildIcsInvite(event, SITE_URL, getOrganizer(), { name: attendeeName, email: attendeeEmail });
+  return {
+    filename: "invite.ics",
+    content: Buffer.from(ics, "utf-8").toString("base64"),
+    contentType: "text/calendar; charset=utf-8; method=REQUEST",
+  };
 }
 
 function wrapper(bodyHtml: string, previewText: string): string {
@@ -64,14 +86,14 @@ function button(label: string, href: string): string {
   return `<a href="${href}" style="display:inline-block;margin-top:20px;padding:13px 28px;background:#C3A46D;color:#0A0E0D;text-decoration:none;font-weight:bold;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;border-radius:2px;font-family:Helvetica,Arial,sans-serif;">${label}</a>`;
 }
 
-async function send(to: string, subject: string, html: string): Promise<{ error?: string }> {
+async function send(to: string, subject: string, html: string, attachments?: EmailAttachment[]): Promise<{ error?: string }> {
   const client = getClient();
   if (!client) {
     console.log(`[email] Skipped (no RESEND_API_KEY configured) — would have sent "${subject}" to ${to}`);
     return {};
   }
   try {
-    const { error } = await client.emails.send({ from: FROM, to, subject, html });
+    const { error } = await client.emails.send({ from: FROM, to, subject, html, attachments });
     if (error) return { error: error.message };
     return {};
   } catch (e) {
@@ -120,20 +142,15 @@ export async function sendMembershipRejectedEmail(to: string, firstName: string,
   return send(to, "Your TP Tour application", html);
 }
 
-export async function sendEventEntryConfirmedEmail(
-  to: string,
-  firstName: string,
-  eventName: string,
-  eventDateLabel: string,
-  eventSlug: string,
-) {
+export async function sendEventEntryConfirmedEmail(to: string, firstName: string, attendeeName: string, event: IcsEvent) {
+  const eventDateLabel = formatEventDateLong(event.event_date);
   const html = wrapper(
     `<h1 style="font-size:22px;margin:0 0 16px;">You're on the tee sheet.</h1>
-     <p>Hi ${firstName}, your entry into <strong>${eventName}</strong> on ${eventDateLabel} is confirmed.</p>
-     ${button("Event Details", `${SITE_URL}/events/${eventSlug}`)}`,
-    `You're entered into ${eventName}.`,
+     <p>Hi ${firstName}, your entry into <strong>${event.name}</strong> on ${eventDateLabel} is confirmed. We've attached a calendar invite below.</p>
+     ${button("Event Details", `${SITE_URL}/events/${event.slug}`)}`,
+    `You're entered into ${event.name}.`,
   );
-  return send(to, `Entry Confirmed — ${eventName}`, html);
+  return send(to, `Entry Confirmed — ${event.name}`, html, [icsAttachment(event, attendeeName, to)]);
 }
 
 export async function sendWaitingListConfirmedEmail(to: string, firstName: string, eventName: string, eventSlug: string) {
@@ -146,14 +163,14 @@ export async function sendWaitingListConfirmedEmail(to: string, firstName: strin
   return send(to, `Waiting List — ${eventName}`, html);
 }
 
-export async function sendWaitingListPromotedEmail(to: string, firstName: string, eventName: string, eventSlug: string) {
+export async function sendWaitingListPromotedEmail(to: string, firstName: string, attendeeName: string, event: IcsEvent) {
   const html = wrapper(
     `<h1 style="font-size:22px;margin:0 0 16px;">A space opened up.</h1>
-     <p>Hi ${firstName}, good news — a space became available at <strong>${eventName}</strong> and you've been moved from the waiting list onto the tee sheet.</p>
-     ${button("Event Details", `${SITE_URL}/events/${eventSlug}`)}`,
-    `You're now entered into ${eventName}.`,
+     <p>Hi ${firstName}, good news — a space became available at <strong>${event.name}</strong> and you've been moved from the waiting list onto the tee sheet. We've attached a calendar invite below.</p>
+     ${button("Event Details", `${SITE_URL}/events/${event.slug}`)}`,
+    `You're now entered into ${event.name}.`,
   );
-  return send(to, `You're In — ${eventName}`, html);
+  return send(to, `You're In — ${event.name}`, html, [icsAttachment(event, attendeeName, to)]);
 }
 
 export async function sendResultsPublishedEmail(to: string, firstName: string, eventName: string, eventSlug: string) {
