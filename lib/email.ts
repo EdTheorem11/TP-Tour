@@ -1,6 +1,12 @@
 import { Resend } from "resend";
-import { formatHandicap, formatEventDateLong } from "@/lib/format";
+import { formatHandicap, formatEventDateLong, tbc } from "@/lib/format";
 import { buildIcsInvite, type IcsEvent } from "@/lib/ics";
+import { FORMAT_LABELS, type CompetitionFormat } from "@/lib/types";
+
+export type EventEmailDetails = IcsEvent & {
+  format: CompetitionFormat | null;
+  golf_club_name: string | null;
+};
 
 const FROM = process.env.RESEND_FROM_EMAIL || "TP Tour <onboarding@resend.dev>";
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://tptourgolf.com";
@@ -82,6 +88,29 @@ function wrapper(bodyHtml: string, previewText: string): string {
 </html>`;
 }
 
+function eventDetailsTable(event: EventEmailDetails): string {
+  const rows: [string, string][] = [
+    ["Date", formatEventDateLong(event.event_date)],
+    ["Golf Club", tbc(event.golf_club_name)],
+    ["Arrival Time", tbc(event.arrival_time)],
+    ["First Tee / Shotgun", tbc(event.first_tee_time ?? event.shotgun_time)],
+    ["Format", event.format ? FORMAT_LABELS[event.format] : "TBC"],
+  ];
+
+  const cells = rows
+    .map(
+      ([label, value]) => `
+                  <tr>
+                    <td style="padding:10px 0;border-top:1px solid rgba(244,241,233,0.1);color:rgba(244,241,233,0.5);font-size:11px;font-weight:bold;letter-spacing:1px;text-transform:uppercase;font-family:Helvetica,Arial,sans-serif;">${label}</td>
+                    <td style="padding:10px 0;border-top:1px solid rgba(244,241,233,0.1);color:#F4F1E9;font-size:14px;font-weight:bold;text-align:right;font-family:Helvetica,Arial,sans-serif;">${value}</td>
+                  </tr>`,
+    )
+    .join("");
+
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:24px;">${cells}
+                </table>`;
+}
+
 function button(label: string, href: string): string {
   return `<a href="${href}" style="display:inline-block;margin-top:20px;padding:13px 28px;background:#C3A46D;color:#0A0E0D;text-decoration:none;font-weight:bold;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;border-radius:2px;font-family:Helvetica,Arial,sans-serif;">${label}</a>`;
 }
@@ -142,11 +171,12 @@ export async function sendMembershipRejectedEmail(to: string, firstName: string,
   return send(to, "Your TP Tour application", html);
 }
 
-export async function sendEventEntryConfirmedEmail(to: string, firstName: string, attendeeName: string, event: IcsEvent) {
+export async function sendEventEntryConfirmedEmail(to: string, firstName: string, attendeeName: string, event: EventEmailDetails) {
   const eventDateLabel = formatEventDateLong(event.event_date);
   const html = wrapper(
     `<h1 style="font-size:22px;margin:0 0 16px;">You're on the tee sheet.</h1>
      <p>Hi ${firstName}, your entry into <strong>${event.name}</strong> on ${eventDateLabel} is confirmed. We've attached a calendar invite below.</p>
+     ${eventDetailsTable(event)}
      ${button("Event Details", `${SITE_URL}/events/${event.slug}`)}`,
     `You're entered into ${event.name}.`,
   );
@@ -163,10 +193,11 @@ export async function sendWaitingListConfirmedEmail(to: string, firstName: strin
   return send(to, `Waiting List — ${eventName}`, html);
 }
 
-export async function sendWaitingListPromotedEmail(to: string, firstName: string, attendeeName: string, event: IcsEvent) {
+export async function sendWaitingListPromotedEmail(to: string, firstName: string, attendeeName: string, event: EventEmailDetails) {
   const html = wrapper(
     `<h1 style="font-size:22px;margin:0 0 16px;">A space opened up.</h1>
      <p>Hi ${firstName}, good news — a space became available at <strong>${event.name}</strong> and you've been moved from the waiting list onto the tee sheet. We've attached a calendar invite below.</p>
+     ${eventDetailsTable(event)}
      ${button("Event Details", `${SITE_URL}/events/${event.slug}`)}`,
     `You're now entered into ${event.name}.`,
   );

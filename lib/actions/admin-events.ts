@@ -165,11 +165,14 @@ export async function addEntryByEmail(eventId: string, formData: FormData) {
 
   const { data: event } = await supabase
     .from("events")
-    .select("id, slug, name, event_date, location, arrival_time, first_tee_time, shotgun_time")
+    .select("id, slug, name, event_date, location, arrival_time, first_tee_time, shotgun_time, format, golf_clubs(name)")
     .eq("id", eventId)
     .single();
   if (event) {
-    await sendEventEntryConfirmedEmail(member.email, member.first_name, `${member.first_name} ${member.last_name}`, event);
+    await sendEventEntryConfirmedEmail(member.email, member.first_name, `${member.first_name} ${member.last_name}`, {
+      ...event,
+      golf_club_name: event.golf_clubs?.[0]?.name ?? null,
+    });
   }
 
   revalidatePath(`/admin/entries/${eventId}`);
@@ -208,12 +211,15 @@ export async function promoteWaitingListEntry(eventId: string, waitingListId: st
       supabase.from("member_profiles").select("email, first_name, last_name").eq("id", waiting.member_id).single(),
       supabase
         .from("events")
-        .select("id, slug, name, event_date, location, arrival_time, first_tee_time, shotgun_time")
+        .select("id, slug, name, event_date, location, arrival_time, first_tee_time, shotgun_time, format, golf_clubs(name)")
         .eq("id", eventId)
         .single(),
     ]);
     if (member && event) {
-      await sendWaitingListPromotedEmail(member.email, member.first_name, `${member.first_name} ${member.last_name}`, event);
+      await sendWaitingListPromotedEmail(member.email, member.first_name, `${member.first_name} ${member.last_name}`, {
+        ...event,
+        golf_club_name: event.golf_clubs?.[0]?.name ?? null,
+      });
     }
   }
 

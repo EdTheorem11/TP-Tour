@@ -24,25 +24,48 @@ export async function enterEvent(eventSlug: string, eventId: string): Promise<{ 
 
   const { data: event } = await supabase
     .from("events")
-    .select("id, slug, name, event_date, location, arrival_time, first_tee_time, shotgun_time, member_price")
+    .select("id, slug, name, event_date, location, arrival_time, first_tee_time, shotgun_time, format, member_price, golf_clubs(name)")
     .eq("id", eventId)
     .single();
 
-  const { error } = await supabase.from("event_entries").insert({
-    event_id: eventId,
-    member_id: user.id,
+  // A withdrawn entry leaves its row behind (status "withdrawn") rather than being
+  // deleted, so re-entering after a withdrawal must reactivate that row instead of
+  // inserting a new one — the partial unique index on (event_id, member_id) for
+  // non-guest entries would otherwise reject the insert.
+  const { data: existingEntry } = await supabase
+    .from("event_entries")
+    .select("id, status")
+    .eq("event_id", eventId)
+    .eq("member_id", user.id)
+    .eq("is_guest", false)
+    .maybeSingle();
+
+  const entryFields = {
     playing_handicap: profile.current_handicap,
     status: "confirmed",
+    withdrawn_at: null,
+    withdrawal_reason: null,
     agreed_to_rules: true,
     payment_required: !!event?.member_price,
     payment_amount: event?.member_price ?? null,
     payment_status: event?.member_price ? "pending" : "not_required",
-  });
+  };
+
+  let error;
+  if (existingEntry) {
+    if (existingEntry.status === "confirmed") return { error: "You're already entered in this event." };
+    ({ error } = await supabase.from("event_entries").update(entryFields).eq("id", existingEntry.id));
+  } else {
+    ({ error } = await supabase.from("event_entries").insert({ event_id: eventId, member_id: user.id, ...entryFields }));
+  }
 
   if (error) return { error: error.code === "23505" ? "You're already entered in this event." : error.message };
 
   if (event) {
-    await sendEventEntryConfirmedEmail(profile.email, profile.first_name, `${profile.first_name} ${profile.last_name}`, event);
+    await sendEventEntryConfirmedEmail(profile.email, profile.first_name, `${profile.first_name} ${profile.last_name}`, {
+      ...event,
+      golf_club_name: event.golf_clubs?.[0]?.name ?? null,
+    });
   }
 
   revalidatePath(`/events/${eventSlug}`);
