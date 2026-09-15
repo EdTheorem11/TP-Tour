@@ -1,10 +1,10 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getEventEntriesAdmin, getEventWaitingListAdmin } from "@/lib/data/admin";
-import { inputClass } from "@/components/admin/form";
+import { getEventEntriesAdmin, getEventWaitingListAdmin, getAllMembersAdmin } from "@/lib/data/admin";
 import { Button } from "@/components/ui/button";
 import { PaymentStatusSelect } from "@/components/admin/payment-status-select";
 import { PrintButton } from "@/components/admin/print-button";
+import { MemberSearchInput } from "@/components/admin/member-search-input";
 import {
   addEntryByEmail,
   removeEntry,
@@ -54,12 +54,19 @@ export default async function AdminEntriesForEventPage({
   const { data: event } = await supabase.from("events").select("*").eq("id", eventId).single();
   if (!event) notFound();
 
-  const [entries, waitingList] = await Promise.all([
+  const [entries, waitingList, allMembers] = await Promise.all([
     getEventEntriesAdmin(eventId) as Promise<EntryRow[]>,
     getEventWaitingListAdmin(eventId) as Promise<WaitingRow[]>,
+    getAllMembersAdmin(),
   ]);
 
   const confirmed = entries.filter((e) => e.status === "confirmed");
+  const searchableMembers = allMembers.map((m) => ({
+    id: m.id,
+    name: `${m.first_name} ${m.last_name}`,
+    email: m.email,
+    company: m.company,
+  }));
 
   const eventDetails = event as TourEvent;
 
@@ -123,8 +130,8 @@ export default async function AdminEntriesForEventPage({
         </table>
       </div>
 
-      <form action={addEntryByEmail.bind(null, eventId)} className="mt-8 flex max-w-md gap-3 print:hidden">
-        <input name="email" type="email" required placeholder="Member email" className={inputClass} />
+      <form action={addEntryByEmail.bind(null, eventId)} className="mt-8 flex max-w-md items-start gap-3 print:hidden">
+        <MemberSearchInput members={searchableMembers} />
         <Button type="submit" variant="gold" size="sm">Add Player</Button>
       </form>
       <p className="mt-2 text-xs text-tp-offwhite/40 print:hidden">
