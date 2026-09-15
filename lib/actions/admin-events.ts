@@ -171,7 +171,7 @@ export async function addEntryByEmail(eventId: string, formData: FormData) {
   if (event) {
     await sendEventEntryConfirmedEmail(member.email, member.first_name, `${member.first_name} ${member.last_name}`, {
       ...event,
-      golf_club_name: event.golf_clubs?.[0]?.name ?? null,
+      golf_club_name: (event.golf_clubs as unknown as { name: string | null } | null)?.name ?? null,
     });
   }
 
@@ -218,7 +218,7 @@ export async function promoteWaitingListEntry(eventId: string, waitingListId: st
     if (member && event) {
       await sendWaitingListPromotedEmail(member.email, member.first_name, `${member.first_name} ${member.last_name}`, {
         ...event,
-        golf_club_name: event.golf_clubs?.[0]?.name ?? null,
+        golf_club_name: (event.golf_clubs as unknown as { name: string | null } | null)?.name ?? null,
       });
     }
   }

@@ -64,7 +64,7 @@ export async function enterEvent(eventSlug: string, eventId: string): Promise<{ 
   if (event) {
     await sendEventEntryConfirmedEmail(profile.email, profile.first_name, `${profile.first_name} ${profile.last_name}`, {
       ...event,
-      golf_club_name: event.golf_clubs?.[0]?.name ?? null,
+      golf_club_name: (event.golf_clubs as unknown as { name: string | null } | null)?.name ?? null,
     });
   }
 
