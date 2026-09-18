@@ -118,6 +118,17 @@ export async function Footer() {
         <Container className="flex flex-col gap-2 text-xs text-tp-offwhite/40 sm:flex-row sm:items-center sm:justify-between">
           <span>&copy; TP Tour {new Date().getFullYear()}</span>
           <span>Dubai &middot; United Arab Emirates</span>
+          <span>
+            Website designed by{" "}
+            <a
+              href="https://www.foliodigital.co.uk/"
+              target="_blank"
+              rel="noreferrer"
+              className="text-tp-offwhite/60 hover:text-tp-gold"
+            >
+              Folio Digital
+            </a>
+          </span>
         </Container>
       </div>
     </footer>
