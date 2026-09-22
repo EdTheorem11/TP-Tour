@@ -157,24 +157,26 @@ export async function recalculateEventResults(eventId: string) {
   revalidatePath("/");
 }
 
-export async function publishEventResults(eventId: string) {
+export async function publishEventResults(eventId: string, sendEmails: boolean) {
   const { supabase, adminId } = await requireAdmin();
   const { error } = await supabase.rpc("publish_event_results", { p_event_id: eventId, p_admin_id: adminId });
   if (error) throw new Error(error.message);
 
-  const { data: event } = await supabase.from("events").select("name, slug").eq("id", eventId).single();
-  const { data: results } = await supabase
-    .from("event_results")
-    .select("member_profiles(email, first_name)")
-    .eq("event_id", eventId)
-    .eq("published", true);
+  if (sendEmails) {
+    const { data: event } = await supabase.from("events").select("name, slug").eq("id", eventId).single();
+    const { data: results } = await supabase
+      .from("event_results")
+      .select("member_profiles!member_id(email, first_name)")
+      .eq("event_id", eventId)
+      .eq("published", true);
 
-  if (event && results) {
-    await Promise.all(
-      (results as unknown as Array<{ member_profiles: { email: string; first_name: string } | null }>).map((r) =>
-        r.member_profiles ? sendResultsPublishedEmail(r.member_profiles.email, r.member_profiles.first_name, event.name, event.slug) : Promise.resolve(),
-      ),
-    );
+    if (event && results) {
+      await Promise.all(
+        (results as unknown as Array<{ member_profiles: { email: string; first_name: string } | null }>).map((r) =>
+          r.member_profiles ? sendResultsPublishedEmail(r.member_profiles.email, r.member_profiles.first_name, event.name, event.slug) : Promise.resolve(),
+        ),
+      );
+    }
   }
 
   revalidatePath(`/admin/scoring/${eventId}`);
