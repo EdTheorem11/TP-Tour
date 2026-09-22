@@ -180,7 +180,7 @@ export async function getPendingHandicapChanges() {
     const supabase = await createClient();
     const { data } = await supabase
       .from("handicap_history")
-      .select("*, member_profiles(first_name, last_name)")
+      .select("*, member_profiles!member_id(first_name, last_name)")
       .eq("status", "pending")
       .order("created_at", { ascending: true });
     return data ?? [];
@@ -253,7 +253,7 @@ export async function getEventScoresAdmin(eventId: string) {
     const supabase = await createClient();
     const { data } = await supabase
       .from("event_scores")
-      .select("*, member_profiles(first_name, last_name)")
+      .select("*, member_profiles!member_id(first_name, last_name)")
       .eq("event_id", eventId);
     return data ?? [];
   }, []);
@@ -284,7 +284,7 @@ export async function getOomAdjustmentsAdmin(seasonId: string) {
     const supabase = await createClient();
     const { data } = await supabase
       .from("order_of_merit_adjustments")
-      .select("*, member_profiles(first_name, last_name)")
+      .select("*, member_profiles!member_id(first_name, last_name)")
       .eq("season_id", seasonId)
       .order("created_at", { ascending: false });
     return data ?? [];
