@@ -69,15 +69,23 @@ export function OomPreview({ standings, isLoggedIn }: { standings: OrderOfMeritP
           <p className="text-tp-offwhite/50">Standings will appear once the season is underway.</p>
         ) : (
           <div className="overflow-x-auto border border-white/10 bg-tp-black/40">
-            <table className="w-full min-w-[640px] border-collapse text-left tabular-nums">
+            <table className="w-full table-fixed border-collapse text-left tabular-nums sm:min-w-[640px]">
+              <colgroup>
+                <col className="w-14 sm:w-16" />
+                <col />
+                <col className="hidden w-20 sm:table-column" />
+                <col className="hidden w-20 sm:table-column" />
+                <col className="hidden w-20 sm:table-column" />
+                <col className="w-20 sm:w-24" />
+              </colgroup>
               <thead>
                 <tr className="border-b border-white/10 text-[10px] font-semibold uppercase tracking-[0.15em] text-tp-offwhite/40">
-                  <th className="px-4 py-2.5">Pos</th>
-                  <th className="px-4 py-2.5">Player</th>
-                  <th className="px-4 py-2.5">Hcp</th>
-                  <th className="px-4 py-2.5">Events</th>
-                  <th className="px-4 py-2.5">Wins</th>
-                  <th className="px-4 py-2.5 text-right">Points</th>
+                  <th className="px-2 py-2.5 sm:px-4">Pos</th>
+                  <th className="px-2 py-2.5 sm:px-4">Player</th>
+                  <th className="hidden px-4 py-2.5 sm:table-cell">Hcp</th>
+                  <th className="hidden px-4 py-2.5 sm:table-cell">Events</th>
+                  <th className="hidden px-4 py-2.5 sm:table-cell">Wins</th>
+                  <th className="px-2 py-2.5 text-right sm:px-4">Points</th>
                 </tr>
               </thead>
               <tbody>
@@ -94,7 +102,7 @@ export function OomPreview({ standings, isLoggedIn }: { standings: OrderOfMeritP
                         top3 ? "bg-tp-gold/[0.05]" : i % 2 === 1 && "bg-white/[0.012]",
                       )}
                     >
-                      <td className="px-4 py-2">
+                      <td className="px-2 py-2 sm:px-4">
                         <div className="flex items-center gap-1.5">
                           <span
                             className={clsx(
@@ -109,7 +117,7 @@ export function OomPreview({ standings, isLoggedIn }: { standings: OrderOfMeritP
                             {row.rank === null ? "—" : isTied ? `T${row.rank}` : row.rank}
                           </span>
                           {row.previous_rank !== null && move.direction !== "same" && (
-                            <span className="flex items-center gap-0.5">
+                            <span className="hidden items-center gap-0.5 sm:flex">
                               <MovementArrow direction={move.direction as "up" | "down"} />
                               <span className={clsx("text-[10px] font-semibold", move.direction === "up" ? "text-tp-green-light" : "text-red-400")}>
                                 {move.symbol.replace(/^[▲▼]\s*/, "")}
@@ -118,16 +126,16 @@ export function OomPreview({ standings, isLoggedIn }: { standings: OrderOfMeritP
                           )}
                         </div>
                       </td>
-                      <td className="px-4 py-2">
+                      <td className="truncate px-2 py-2 sm:px-4">
                         <Link href={`/players/${row.member_id}`} className="font-semibold text-tp-offwhite hover:text-tp-gold">
                           {row.member_profiles?.first_name} {row.member_profiles?.last_name}
                         </Link>
                       </td>
-                      <td className="px-4 py-2 text-tp-offwhite/60">
+                      <td className="hidden px-4 py-2 text-tp-offwhite/60 sm:table-cell">
                         {formatHandicap(row.member_profiles?.current_handicap)}
                       </td>
-                      <td className="px-4 py-2 text-tp-offwhite/60">{row.events_played}</td>
-                      <td className="px-4 py-2 text-tp-offwhite/60">
+                      <td className="hidden px-4 py-2 text-tp-offwhite/60 sm:table-cell">{row.events_played}</td>
+                      <td className="hidden px-4 py-2 text-tp-offwhite/60 sm:table-cell">
                         {row.wins > 0 ? (
                           <span className="inline-flex items-center gap-1">
                             <span aria-hidden className="text-tp-gold">🏆</span>
@@ -137,7 +145,7 @@ export function OomPreview({ standings, isLoggedIn }: { standings: OrderOfMeritP
                           row.wins
                         )}
                       </td>
-                      <td className="px-4 py-2 text-right font-heading text-base font-bold text-tp-offwhite">
+                      <td className="px-2 py-2 text-right font-heading text-base font-bold text-tp-offwhite sm:px-4">
                         {row.counting_points}
                       </td>
                     </tr>
