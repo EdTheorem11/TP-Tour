@@ -262,7 +262,7 @@ export async function sendEventThankYouEmails(eventId: string): Promise<{ error?
 
   let sent = 0;
   for (const r of recipients) {
-    const { error } = await sendEventThankYouEmail(r.email, r.first_name, event, nextEvent);
+    const { error } = await sendEventThankYouEmail(r.email, event, nextEvent);
     if (!error) sent++;
   }
 

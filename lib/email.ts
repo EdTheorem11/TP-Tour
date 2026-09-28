@@ -195,23 +195,23 @@ export async function sendWaitingListConfirmedEmail(to: string, firstName: strin
 
 export async function sendEventThankYouEmail(
   to: string,
-  firstName: string,
   event: { name: string; slug: string },
   nextEvent: { name: string; slug: string; event_date: string } | null,
 ) {
   const html = wrapper(
-    `<h1 style="font-size:22px;margin:0 0 16px;">Thanks for playing, ${firstName}.</h1>
-     <p>It was great having you out at <strong>${event.name}</strong> — we hope you enjoyed the round.</p>
+    `<h1 style="font-size:22px;margin:0 0 16px;">Thank You for Playing</h1>
+     <p>It was great having you join us at <strong>${event.name}</strong>, we hope you enjoyed the round.</p>
+     <p style="margin-top:16px;">Thank you to all our sponsors and to those who donated prizes for the day.</p>
      ${
        nextEvent
-         ? `<p style="margin-top:20px;">Up next: <strong>${nextEvent.name}</strong> on ${formatEventDateLong(nextEvent.event_date)}.</p>
-            ${button("View Next Event", `${SITE_URL}/events/${nextEvent.slug}`)}`
+         ? `<p style="margin-top:20px;">If you are interested in our next event at <strong>${nextEvent.name}</strong> on ${formatEventDateLong(nextEvent.event_date)}, please click the link below to sign up.</p>
+            ${button("Join Next Event", `${SITE_URL}/events/${nextEvent.slug}`)}`
          : `<p style="margin-top:20px;">Keep an eye out for the next event on the tour schedule.</p>
             ${button("View Tour Schedule", `${SITE_URL}/tour-schedule`)}`
      }`,
-    `Thanks for playing at ${event.name}.`,
+    `Thank you for playing ${event.name}.`,
   );
-  return send(to, `Thanks for Playing — ${event.name}`, html);
+  return send(to, `Thank You for Playing ${event.name}`, html);
 }
 
 export async function sendWaitingListPromotedEmail(to: string, firstName: string, attendeeName: string, event: EventEmailDetails) {
