@@ -89,6 +89,21 @@ export async function getEventCapacities(eventIds: string[]): Promise<Record<str
   }, {});
 }
 
+export async function getSeasonEventCounts(seasonId: string): Promise<{ total: number; played: number }> {
+  return safe(async () => {
+    const supabase = await createClient();
+    const [{ count: total }, { count: played }] = await Promise.all([
+      supabase
+        .from("events")
+        .select("*", { count: "exact", head: true })
+        .eq("season_id", seasonId)
+        .not("status", "in", "(draft,cancelled)"),
+      supabase.from("events").select("*", { count: "exact", head: true }).eq("season_id", seasonId).eq("status", "completed"),
+    ]);
+    return { total: total ?? 0, played: played ?? 0 };
+  }, { total: 0, played: 0 });
+}
+
 export async function getSeasonEvents(seasonId: string): Promise<TourEvent[]> {
   return safe(async () => {
     const supabase = await createClient();

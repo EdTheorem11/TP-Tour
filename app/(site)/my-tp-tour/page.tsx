@@ -5,6 +5,7 @@ import { LinkButton } from "@/components/ui/button";
 import { InviteShare } from "@/components/site/invite-share";
 import { HandicapTrend } from "@/components/site/handicap-trend";
 import { WelcomeModal } from "@/components/site/welcome-modal";
+import { OnboardingChecklist } from "@/components/site/onboarding-checklist";
 import { getCurrentProfile } from "@/lib/data/current-user";
 import { getCurrentSeason, getPlayerOomRow, getMyNextEntry, getMyHandicapHistory, getNextEvent } from "@/lib/data/site";
 import { formatHandicap, formatEventDateLong, tbc } from "@/lib/format";
@@ -50,6 +51,10 @@ export default async function MyTpTourPage() {
         <h1 className="mt-3 font-heading text-4xl font-bold uppercase text-tp-offwhite sm:text-5xl">
           Welcome Back, <span className="text-tp-green-light">{profile.first_name}</span>.
         </h1>
+
+        <div className="mt-8">
+          <OnboardingChecklist profile={profile} />
+        </div>
 
         <div className="mt-10 grid grid-cols-2 gap-px overflow-hidden border border-white/10 bg-white/10 sm:grid-cols-3 lg:grid-cols-6">
           {stats.map((s) => (

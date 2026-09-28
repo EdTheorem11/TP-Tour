@@ -2,7 +2,7 @@ import Link from "next/link";
 import { clsx } from "clsx";
 import { Container } from "@/components/ui/container";
 import { MemberGate } from "@/components/site/member-gate";
-import { getAllSeasons, getCurrentSeason, getSeasonByName, getOrderOfMerit, getSeasonChampions } from "@/lib/data/site";
+import { getAllSeasons, getCurrentSeason, getSeasonByName, getOrderOfMerit, getSeasonChampions, getSeasonEventCounts } from "@/lib/data/site";
 import { getCurrentProfile } from "@/lib/data/current-user";
 import { formatHandicap, movementIndicator } from "@/lib/format";
 import type { Metadata } from "next";
@@ -37,9 +37,10 @@ export default async function OrderOfMeritPage({
 
   const seasons = await getAllSeasons();
   const season = params.season ? await getSeasonByName(params.season) : await getCurrentSeason();
-  const [standings, pastChampions] = await Promise.all([
+  const [standings, pastChampions, eventCounts] = await Promise.all([
     season ? getOrderOfMerit(season.id) : Promise.resolve([]),
     getSeasonChampions(),
+    season ? getSeasonEventCounts(season.id) : Promise.resolve(null),
   ]);
 
   const rankCounts = new Map<number, number>();
@@ -61,6 +62,11 @@ export default async function OrderOfMeritPage({
           Each player&rsquo;s best 4 Stableford scores across the season combine for their total &mdash; every event
           counts, but only your top 4 rounds decide the standings.
         </p>
+        {eventCounts && eventCounts.total > 0 && (
+          <p className="mt-4 inline-flex items-center gap-2 border border-white/10 bg-tp-dark px-4 py-2 text-xs font-semibold uppercase tracking-[0.1em] text-tp-offwhite/60">
+            Event {eventCounts.played} of {eventCounts.total} Played This Season
+          </p>
+        )}
 
         <div className="mt-8 flex flex-wrap gap-2 border-b border-white/10 pb-6">
           {seasons.map((s) => (

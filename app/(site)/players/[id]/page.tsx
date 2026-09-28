@@ -36,10 +36,14 @@ export default async function PlayerProfilePage({ params }: { params: Promise<{ 
 
   const stablefordScores = results.map((r) => r.event_scores?.stableford_points).filter((v): v is number => v != null);
   const bestFinish = results.length ? Math.min(...results.map((r) => r.position)) : null;
-  const avgStableford = stablefordScores.length
-    ? (stablefordScores.reduce((a, b) => a + b, 0) / stablefordScores.length).toFixed(1)
-    : "—";
+  const avgStablefordNum = stablefordScores.length ? stablefordScores.reduce((a, b) => a + b, 0) / stablefordScores.length : null;
+  const avgStableford = avgStablefordNum !== null ? avgStablefordNum.toFixed(1) : "—";
   const highestStableford = stablefordScores.length ? Math.max(...stablefordScores) : "—";
+
+  const recentForm = [...results]
+    .filter((r) => r.events?.event_date && r.event_scores?.stableford_points != null)
+    .sort((a, b) => (b.events!.event_date > a.events!.event_date ? 1 : -1))
+    .slice(0, 4);
 
   const stats = [
     { label: "Events Played", value: oom?.events_played ?? results.length },
@@ -87,6 +91,28 @@ export default async function PlayerProfilePage({ params }: { params: Promise<{ 
                     <Mail size={15} /> {player.email}
                   </a>
                 )}
+              </div>
+            )}
+            {recentForm.length > 0 && (
+              <div className="mt-4 flex items-center gap-2">
+                <span className="text-[10px] font-semibold uppercase tracking-[0.1em] text-tp-offwhite/40">Recent Form</span>
+                <div className="flex gap-1.5">
+                  {recentForm.map((r, i) => {
+                    const score = r.event_scores!.stableford_points!;
+                    const aboveAvg = avgStablefordNum !== null && score >= avgStablefordNum;
+                    return (
+                      <span
+                        key={r.id}
+                        title={r.events?.name}
+                        className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ${
+                          aboveAvg ? "bg-tp-green-light text-tp-black" : "bg-white/10 text-tp-offwhite/70"
+                        } ${i === 0 ? "ring-1 ring-tp-gold" : ""}`}
+                      >
+                        {score}
+                      </span>
+                    );
+                  })}
+                </div>
               </div>
             )}
           </div>
