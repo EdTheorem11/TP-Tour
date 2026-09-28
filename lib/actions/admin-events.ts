@@ -3,7 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { sendEventEntryConfirmedEmail, sendWaitingListPromotedEmail } from "@/lib/email";
+import { sendEventEntryConfirmedEmail, sendWaitingListPromotedEmail, sendEventThankYouEmail } from "@/lib/email";
 
 function slugify(input: string): string {
   return input
@@ -232,6 +232,51 @@ export async function removeFromWaitingList(eventId: string, waitingListId: stri
   if (error) throw new Error(error.message);
   await supabase.from("admin_audit_log").insert({ admin_id: adminId, action: "remove_waiting_list", entity_type: "waiting_list", entity_id: waitingListId });
   revalidatePath(`/admin/entries/${eventId}`);
+}
+
+// Manual trigger for the "thanks for playing" email — sends to every
+// confirmed, non-guest entrant (guests have no email on file to reach).
+// Marks the event as sent so it can't be double-fired by accident, though
+// an admin can deliberately resend by calling this again.
+export async function sendEventThankYouEmails(eventId: string): Promise<{ error?: string; sent?: number }> {
+  const { supabase, adminId } = await requireAdmin();
+
+  const { data: event } = await supabase.from("events").select("id, slug, name").eq("id", eventId).single();
+  if (!event) return { error: "Event not found." };
+
+  const { data: entrants } = await supabase
+    .from("event_entries")
+    .select("member_profiles(email, first_name)")
+    .eq("event_id", eventId)
+    .eq("status", "confirmed")
+    .eq("is_guest", false);
+
+  const recipients = ((entrants ?? []) as unknown as Array<{ member_profiles: { email: string; first_name: string } | null }>)
+    .map((e) => e.member_profiles)
+    .filter((m): m is { email: string; first_name: string } => m !== null);
+
+  if (recipients.length === 0) return { error: "No confirmed members entered this event." };
+
+  const { data: nextEventRows } = await supabase.from("next_event").select("name, slug, event_date").limit(1);
+  const nextEvent = nextEventRows?.[0] ?? null;
+
+  let sent = 0;
+  for (const r of recipients) {
+    const { error } = await sendEventThankYouEmail(r.email, r.first_name, event, nextEvent);
+    if (!error) sent++;
+  }
+
+  await supabase.from("events").update({ attendee_thank_you_sent_at: new Date().toISOString() }).eq("id", eventId);
+  await supabase.from("admin_audit_log").insert({
+    admin_id: adminId,
+    action: "send_thank_you_emails",
+    entity_type: "events",
+    entity_id: eventId,
+    after: { sent, attempted: recipients.length },
+  });
+
+  revalidatePath(`/admin/entries/${eventId}`);
+  return { sent };
 }
 
 // ---------------------------------------------------------------------------

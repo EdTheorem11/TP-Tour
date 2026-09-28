@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { PaymentStatusSelect } from "@/components/admin/payment-status-select";
 import { PrintButton } from "@/components/admin/print-button";
 import { MemberSearchInput } from "@/components/admin/member-search-input";
+import { SendThankYouButton } from "@/components/admin/send-thank-you-button";
 import {
   addEntryByEmail,
   removeEntry,
@@ -76,7 +77,7 @@ export default async function AdminEntriesForEventPage({
         <h1 className="font-heading text-3xl font-bold uppercase text-tp-offwhite">
           {eventDetails.name} &mdash; Entries
         </h1>
-        <div className="flex gap-3">
+        <div className="flex flex-wrap items-start gap-3">
           <a
             href={`/api/admin/entries/${eventId}/export`}
             className="border border-white/15 px-4 py-2 text-xs font-semibold uppercase tracking-[0.1em] text-tp-offwhite/80 hover:border-tp-gold hover:text-tp-gold"
@@ -84,6 +85,7 @@ export default async function AdminEntriesForEventPage({
             Download CSV
           </a>
           <PrintButton />
+          <SendThankYouButton eventId={eventId} alreadySentAt={eventDetails.attendee_thank_you_sent_at} />
         </div>
       </div>
 
