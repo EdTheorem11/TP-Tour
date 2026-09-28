@@ -5,6 +5,7 @@ import { Container } from "@/components/ui/container";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { EntryPanel } from "@/components/site/entry-panel";
 import { AddToCalendar } from "@/components/site/add-to-calendar";
+import { WhatsAppShareButton } from "@/components/site/whatsapp-share-button";
 import { ArrowScrollRow } from "@/components/ui/arrow-scroll-row";
 import {
   getEventBySlug,
@@ -281,6 +282,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ sl
 
           <div className="space-y-4 lg:sticky lg:top-28 lg:self-start">
             <AddToCalendar event={event} />
+            <WhatsAppShareButton eventName={event.name} eventDate={formatEventDateLong(event.event_date)} eventSlug={event.slug} />
             <EntryPanel
               eventId={event.id}
               eventSlug={event.slug}

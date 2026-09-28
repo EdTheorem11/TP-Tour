@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { Phone, Mail } from "lucide-react";
 import { Container } from "@/components/ui/container";
 import { HandicapTrend } from "@/components/site/handicap-trend";
-import { getPlayerByIdPublic, getPlayerSeasonResults, getPlayerOomRow, getCurrentSeason, getMyHandicapHistory } from "@/lib/data/site";
+import { getPlayerByIdPublic, getPlayerSeasonResults, getPlayerOomRow, getCurrentSeason, getMyHandicapHistory, getSeasonEventCounts } from "@/lib/data/site";
 import { formatHandicap, formatEventDateLong, tbc } from "@/lib/format";
 import type { Metadata } from "next";
 
@@ -28,11 +28,20 @@ export default async function PlayerProfilePage({ params }: { params: Promise<{ 
   if (!player) notFound();
 
   const season = await getCurrentSeason();
-  const [results, oom, handicapHistory] = await Promise.all([
+  const [results, oom, handicapHistory, seasonEventCounts] = await Promise.all([
     getPlayerSeasonResults(id) as Promise<ResultRow[]>,
     season ? getPlayerOomRow(season.id, id) : Promise.resolve(null),
     getMyHandicapHistory(id),
+    season ? getSeasonEventCounts(season.id) : Promise.resolve(null),
   ]);
+
+  const badges: { emoji: string; label: string }[] = [];
+  if (oom?.rank === 1) badges.push({ emoji: "\u{1F3C6}", label: "Leader" });
+  if ((oom?.wins ?? 0) >= 1) badges.push({ emoji: "\u{1F947}", label: "Winner" });
+  if ((oom?.top3 ?? 0) >= 3) badges.push({ emoji: "\u{1F396}\u{FE0F}", label: "Podium Regular" });
+  if (seasonEventCounts && seasonEventCounts.played > 0 && (oom?.events_played ?? 0) >= seasonEventCounts.played) {
+    badges.push({ emoji: "\u{1F4AA}", label: "Iron Man" });
+  }
 
   const stablefordScores = results.map((r) => r.event_scores?.stableford_points).filter((v): v is number => v != null);
   const bestFinish = results.length ? Math.min(...results.map((r) => r.position)) : null;
@@ -74,6 +83,19 @@ export default async function PlayerProfilePage({ params }: { params: Promise<{ 
             <h1 className="mt-2 font-heading text-4xl font-bold uppercase text-tp-offwhite sm:text-5xl">
               {player.first_name} {player.last_name}
             </h1>
+            {badges.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-2">
+                {badges.map((b) => (
+                  <span
+                    key={b.label}
+                    className="flex items-center gap-1.5 border border-tp-gold/30 bg-tp-gold/10 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.05em] text-tp-gold"
+                  >
+                    <span aria-hidden>{b.emoji}</span>
+                    {b.label}
+                  </span>
+                ))}
+              </div>
+            )}
             <p className="mt-2 text-tp-offwhite/60">
               Handicap {formatHandicap(player.current_handicap)}
               {player.company && ` · ${player.company}`}
