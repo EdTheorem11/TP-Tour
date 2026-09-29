@@ -51,14 +51,7 @@ export default async function EventResultsPage({ params }: { params: Promise<{ s
                 <col className="w-14 sm:w-16" />
                 <col />
                 <col className="hidden w-24 sm:table-column" />
-                {isStrokeplay ? (
-                  <>
-                    <col className="hidden w-20 sm:table-column" />
-                    <col className="hidden w-20 sm:table-column" />
-                  </>
-                ) : (
-                  <col className="hidden w-24 sm:table-column" />
-                )}
+                {isStrokeplay && <col className="hidden w-20 sm:table-column" />}
                 <col className="w-20 sm:w-28" />
               </colgroup>
               <thead>
@@ -66,15 +59,8 @@ export default async function EventResultsPage({ params }: { params: Promise<{ s
                   <th className="px-2 py-2.5 sm:px-4">Pos</th>
                   <th className="px-2 py-2.5 sm:px-4">Player</th>
                   <th className="hidden px-4 py-2.5 sm:table-cell">Playing Hcp</th>
-                  {isStrokeplay ? (
-                    <>
-                      <th className="hidden px-4 py-2.5 sm:table-cell">Gross</th>
-                      <th className="hidden px-4 py-2.5 sm:table-cell">Nett</th>
-                    </>
-                  ) : (
-                    <th className="hidden px-4 py-2.5 sm:table-cell">Stableford</th>
-                  )}
-                  <th className="px-2 py-2.5 text-right sm:px-4">OOM Points</th>
+                  {isStrokeplay && <th className="hidden px-4 py-2.5 sm:table-cell">Gross</th>}
+                  <th className="px-2 py-2.5 text-right sm:px-4">{isStrokeplay ? "Nett" : "Stableford"}</th>
                 </tr>
               </thead>
               <tbody>
@@ -105,15 +91,10 @@ export default async function EventResultsPage({ params }: { params: Promise<{ s
                         </Link>
                       </td>
                       <td className="hidden px-4 py-2 text-tp-offwhite/60 sm:table-cell">{formatHandicap(r.event_scores?.playing_handicap)}</td>
-                      {isStrokeplay ? (
-                        <>
-                          <td className="hidden px-4 py-2 text-tp-offwhite/60 sm:table-cell">{tbc(r.event_scores?.gross_score)}</td>
-                          <td className="hidden px-4 py-2 text-tp-offwhite/60 sm:table-cell">{tbc(r.event_scores?.nett_score)}</td>
-                        </>
-                      ) : (
-                        <td className="hidden px-4 py-2 text-tp-offwhite/60 sm:table-cell">{tbc(r.event_scores?.stableford_points)} pts</td>
-                      )}
-                      <td className="px-2 py-2 text-right font-heading text-base font-bold text-tp-gold sm:px-4">{r.oom_points}</td>
+                      {isStrokeplay && <td className="hidden px-4 py-2 text-tp-offwhite/60 sm:table-cell">{tbc(r.event_scores?.gross_score)}</td>}
+                      <td className="px-2 py-2 text-right font-heading text-base font-bold text-tp-gold sm:px-4">
+                        {isStrokeplay ? tbc(r.event_scores?.nett_score) : `${tbc(r.event_scores?.stableford_points)} pts`}
+                      </td>
                     </tr>
                   );
                 })}
