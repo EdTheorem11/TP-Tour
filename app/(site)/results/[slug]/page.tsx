@@ -48,31 +48,31 @@ export default async function EventResultsPage({ params }: { params: Promise<{ s
           <div className="mt-10 overflow-x-auto border border-white/10 bg-tp-dark">
             <table className="w-full table-fixed border-collapse text-left tabular-nums sm:min-w-[640px]">
               <colgroup>
-                <col className="w-16" />
+                <col className="w-14 sm:w-16" />
                 <col />
-                <col className="w-24" />
+                <col className="hidden w-24 sm:table-column" />
                 {isStrokeplay ? (
                   <>
-                    <col className="w-20" />
-                    <col className="w-20" />
+                    <col className="hidden w-20 sm:table-column" />
+                    <col className="hidden w-20 sm:table-column" />
                   </>
                 ) : (
-                  <col className="w-24" />
+                  <col className="hidden w-24 sm:table-column" />
                 )}
-                <col className="w-28" />
+                <col className="w-20 sm:w-28" />
               </colgroup>
               <thead>
                 <tr className="border-b border-white/10 text-[10px] font-semibold uppercase tracking-[0.15em] text-tp-offwhite/40">
                   <th className="px-2 py-2.5 sm:px-4">Pos</th>
                   <th className="px-2 py-2.5 sm:px-4">Player</th>
-                  <th className="px-2 py-2.5 sm:px-4">Playing Hcp</th>
+                  <th className="hidden px-4 py-2.5 sm:table-cell">Playing Hcp</th>
                   {isStrokeplay ? (
                     <>
-                      <th className="px-2 py-2.5 sm:px-4">Gross</th>
-                      <th className="px-2 py-2.5 sm:px-4">Nett</th>
+                      <th className="hidden px-4 py-2.5 sm:table-cell">Gross</th>
+                      <th className="hidden px-4 py-2.5 sm:table-cell">Nett</th>
                     </>
                   ) : (
-                    <th className="px-2 py-2.5 sm:px-4">Stableford</th>
+                    <th className="hidden px-4 py-2.5 sm:table-cell">Stableford</th>
                   )}
                   <th className="px-2 py-2.5 text-right sm:px-4">OOM Points</th>
                 </tr>
@@ -104,14 +104,14 @@ export default async function EventResultsPage({ params }: { params: Promise<{ s
                           {r.member_profiles?.first_name} {r.member_profiles?.last_name}
                         </Link>
                       </td>
-                      <td className="px-2 py-2 text-tp-offwhite/60 sm:px-4">{formatHandicap(r.event_scores?.playing_handicap)}</td>
+                      <td className="hidden px-4 py-2 text-tp-offwhite/60 sm:table-cell">{formatHandicap(r.event_scores?.playing_handicap)}</td>
                       {isStrokeplay ? (
                         <>
-                          <td className="px-2 py-2 text-tp-offwhite/60 sm:px-4">{tbc(r.event_scores?.gross_score)}</td>
-                          <td className="px-2 py-2 text-tp-offwhite/60 sm:px-4">{tbc(r.event_scores?.nett_score)}</td>
+                          <td className="hidden px-4 py-2 text-tp-offwhite/60 sm:table-cell">{tbc(r.event_scores?.gross_score)}</td>
+                          <td className="hidden px-4 py-2 text-tp-offwhite/60 sm:table-cell">{tbc(r.event_scores?.nett_score)}</td>
                         </>
                       ) : (
-                        <td className="px-2 py-2 text-tp-offwhite/60 sm:px-4">{tbc(r.event_scores?.stableford_points)} pts</td>
+                        <td className="hidden px-4 py-2 text-tp-offwhite/60 sm:table-cell">{tbc(r.event_scores?.stableford_points)} pts</td>
                       )}
                       <td className="px-2 py-2 text-right font-heading text-base font-bold text-tp-gold sm:px-4">{r.oom_points}</td>
                     </tr>
