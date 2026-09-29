@@ -38,9 +38,13 @@ export default async function PlayerProfilePage({ params }: { params: Promise<{ 
   const badges: { emoji: string; label: string }[] = [];
   if (oom?.rank === 1) badges.push({ emoji: "\u{1F3C6}", label: "Leader" });
   if ((oom?.wins ?? 0) >= 1) badges.push({ emoji: "\u{1F947}", label: "Winner" });
-  if ((oom?.top3 ?? 0) >= 3) badges.push({ emoji: "\u{1F396}\u{FE0F}", label: "Podium Regular" });
+  if ((oom?.top3 ?? 0) >= 1) {
+    badges.push({ emoji: "\u{1F949}", label: "Top 3 Finish" });
+  } else if ((oom?.top10 ?? 0) >= 1) {
+    badges.push({ emoji: "\u{1F51F}", label: "Top 10 Finish" });
+  }
   if (seasonEventCounts && seasonEventCounts.played > 0 && (oom?.events_played ?? 0) >= seasonEventCounts.played) {
-    badges.push({ emoji: "\u{1F4AA}", label: "Iron Man" });
+    badges.push({ emoji: "\u{1F4AA}", label: "TPT Veteran" });
   }
 
   const stablefordScores = results.map((r) => r.event_scores?.stableford_points).filter((v): v is number => v != null);
