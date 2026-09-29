@@ -8,6 +8,12 @@ import { getCurrentProfile } from "@/lib/data/current-user";
 import { formatEventDateLong, formatHandicap, tbc } from "@/lib/format";
 import type { Metadata } from "next";
 
+const rankBadgeStyles: Record<number, string> = {
+  1: "bg-tp-gold text-tp-black",
+  2: "bg-[#C7CDD6] text-tp-black",
+  3: "bg-[#C89B6E] text-tp-black",
+};
+
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
   const event = await getEventBySlug(slug);
@@ -39,53 +45,78 @@ export default async function EventResultsPage({ params }: { params: Promise<{ s
         {results.length === 0 ? (
           <p className="mt-16 text-center text-tp-offwhite/50">Results have not been published yet.</p>
         ) : (
-          <div className="mt-10 overflow-x-auto">
-            <table className="w-full min-w-[640px] border-collapse text-left">
+          <div className="mt-10 overflow-x-auto border border-white/10 bg-tp-dark">
+            <table className="w-full table-fixed border-collapse text-left tabular-nums sm:min-w-[640px]">
+              <colgroup>
+                <col className="w-16" />
+                <col />
+                <col className="w-24" />
+                {isStrokeplay ? (
+                  <>
+                    <col className="w-20" />
+                    <col className="w-20" />
+                  </>
+                ) : (
+                  <col className="w-24" />
+                )}
+                <col className="w-28" />
+              </colgroup>
               <thead>
-                <tr className="border-b border-white/10 text-[11px] font-semibold uppercase tracking-[0.15em] text-tp-offwhite/40">
-                  <th className="py-3 pr-4">Pos</th>
-                  <th className="py-3 pr-4">Player</th>
-                  <th className="py-3 pr-4">Playing Hcp</th>
+                <tr className="border-b border-white/10 text-[10px] font-semibold uppercase tracking-[0.15em] text-tp-offwhite/40">
+                  <th className="px-2 py-2.5 sm:px-4">Pos</th>
+                  <th className="px-2 py-2.5 sm:px-4">Player</th>
+                  <th className="px-2 py-2.5 sm:px-4">Playing Hcp</th>
                   {isStrokeplay ? (
                     <>
-                      <th className="py-3 pr-4">Gross</th>
-                      <th className="py-3 pr-4">Nett</th>
+                      <th className="px-2 py-2.5 sm:px-4">Gross</th>
+                      <th className="px-2 py-2.5 sm:px-4">Nett</th>
                     </>
                   ) : (
-                    <th className="py-3 pr-4">Stableford</th>
+                    <th className="px-2 py-2.5 sm:px-4">Stableford</th>
                   )}
-                  <th className="py-3 text-right">OOM Points</th>
+                  <th className="px-2 py-2.5 text-right sm:px-4">OOM Points</th>
                 </tr>
               </thead>
               <tbody>
-                {results.map((r) => (
-                  <tr
-                    key={r.id}
-                    className={clsx(
-                      "border-b border-white/5",
-                      r.position === 1 && "bg-tp-gold/[0.06]",
-                    )}
-                  >
-                    <td className="py-4 pr-4 font-heading text-lg font-bold text-tp-offwhite">
-                      {r.position_display}
-                    </td>
-                    <td className="py-4 pr-4">
-                      <Link href={`/players/${r.member_id}`} className="font-semibold text-tp-offwhite hover:text-tp-gold">
-                        {r.member_profiles?.first_name} {r.member_profiles?.last_name}
-                      </Link>
-                    </td>
-                    <td className="py-4 pr-4 text-tp-offwhite/60">{formatHandicap(r.event_scores?.playing_handicap)}</td>
-                    {isStrokeplay ? (
-                      <>
-                        <td className="py-4 pr-4 text-tp-offwhite/60">{tbc(r.event_scores?.gross_score)}</td>
-                        <td className="py-4 pr-4 text-tp-offwhite/60">{tbc(r.event_scores?.nett_score)}</td>
-                      </>
-                    ) : (
-                      <td className="py-4 pr-4 text-tp-offwhite/60">{tbc(r.event_scores?.stableford_points)} pts</td>
-                    )}
-                    <td className="py-4 text-right font-heading text-lg font-bold text-tp-gold">{r.oom_points}</td>
-                  </tr>
-                ))}
+                {results.map((r, i) => {
+                  const isTied = r.position_display.startsWith("T");
+                  const badge = !isTied && r.position <= 3 ? rankBadgeStyles[r.position] : undefined;
+                  return (
+                    <tr
+                      key={r.id}
+                      className={clsx(
+                        "border-b border-white/5 text-sm last:border-b-0",
+                        r.position <= 3 ? "bg-tp-gold/[0.05]" : i % 2 === 1 && "bg-white/[0.012]",
+                      )}
+                    >
+                      <td className="px-2 py-2 sm:px-4">
+                        <span
+                          className={clsx(
+                            "font-heading text-sm font-bold",
+                            badge ? `flex h-6 w-6 items-center justify-center rounded-full ${badge}` : "text-tp-offwhite",
+                          )}
+                        >
+                          {r.position_display}
+                        </span>
+                      </td>
+                      <td className="truncate px-2 py-2 sm:px-4">
+                        <Link href={`/players/${r.member_id}`} className="font-semibold text-tp-offwhite hover:text-tp-gold">
+                          {r.member_profiles?.first_name} {r.member_profiles?.last_name}
+                        </Link>
+                      </td>
+                      <td className="px-2 py-2 text-tp-offwhite/60 sm:px-4">{formatHandicap(r.event_scores?.playing_handicap)}</td>
+                      {isStrokeplay ? (
+                        <>
+                          <td className="px-2 py-2 text-tp-offwhite/60 sm:px-4">{tbc(r.event_scores?.gross_score)}</td>
+                          <td className="px-2 py-2 text-tp-offwhite/60 sm:px-4">{tbc(r.event_scores?.nett_score)}</td>
+                        </>
+                      ) : (
+                        <td className="px-2 py-2 text-tp-offwhite/60 sm:px-4">{tbc(r.event_scores?.stableford_points)} pts</td>
+                      )}
+                      <td className="px-2 py-2 text-right font-heading text-base font-bold text-tp-gold sm:px-4">{r.oom_points}</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

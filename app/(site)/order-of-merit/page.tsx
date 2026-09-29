@@ -5,6 +5,7 @@ import { MemberGate } from "@/components/site/member-gate";
 import { getAllSeasons, getCurrentSeason, getSeasonByName, getOrderOfMerit, getSeasonChampions, getSeasonEventCounts } from "@/lib/data/site";
 import { getCurrentProfile } from "@/lib/data/current-user";
 import { formatHandicap, movementIndicator } from "@/lib/format";
+import { getAchievementBadges } from "@/lib/badges";
 import type { Metadata } from "next";
 
 const rankBadgeStyles: Record<number, string> = {
@@ -140,6 +141,10 @@ export default async function OrderOfMeritPage({
                   const top3 = (row.rank ?? 99) <= 3;
                   const isTied = row.rank !== null && (rankCounts.get(row.rank) ?? 0) > 1;
                   const badge = row.rank !== null && !isTied ? rankBadgeStyles[row.rank] : undefined;
+                  const achievementBadges = getAchievementBadges(
+                    { rank: row.rank, wins: row.wins, top3: row.top3, top10: row.top10, eventsPlayed: row.events_played },
+                    eventCounts?.played ?? 0,
+                  );
                   return (
                     <tr
                       key={row.id}
@@ -176,6 +181,15 @@ export default async function OrderOfMeritPage({
                         <Link href={`/players/${row.member_id}`} className="font-semibold text-tp-offwhite hover:text-tp-gold">
                           {row.member_profiles?.first_name} {row.member_profiles?.last_name}
                         </Link>
+                        {achievementBadges.length > 0 && (
+                          <span className="ml-1.5 inline-flex gap-1 align-middle">
+                            {achievementBadges.map((b) => (
+                              <span key={b.label} title={b.label} aria-label={b.label}>
+                                {b.emoji}
+                              </span>
+                            ))}
+                          </span>
+                        )}
                       </td>
                       <td className="hidden px-4 py-2 text-tp-offwhite/60 sm:table-cell">{formatHandicap(row.member_profiles?.current_handicap)}</td>
                       <td className="hidden px-4 py-2 text-tp-offwhite/60 sm:table-cell">{row.events_played}</td>

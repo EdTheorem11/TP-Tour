@@ -4,6 +4,7 @@ import { Phone, Mail } from "lucide-react";
 import { Container } from "@/components/ui/container";
 import { HandicapTrend } from "@/components/site/handicap-trend";
 import { getPlayerByIdPublic, getPlayerSeasonResults, getPlayerOomRow, getCurrentSeason, getMyHandicapHistory, getSeasonEventCounts } from "@/lib/data/site";
+import { getAchievementBadges } from "@/lib/badges";
 import { formatHandicap, formatEventDateLong, tbc } from "@/lib/format";
 import type { Metadata } from "next";
 
@@ -35,17 +36,10 @@ export default async function PlayerProfilePage({ params }: { params: Promise<{ 
     season ? getSeasonEventCounts(season.id) : Promise.resolve(null),
   ]);
 
-  const badges: { emoji: string; label: string }[] = [];
-  if (oom?.rank === 1) badges.push({ emoji: "\u{1F3C6}", label: "Leader" });
-  if ((oom?.wins ?? 0) >= 1) badges.push({ emoji: "\u{1F947}", label: "Winner" });
-  if ((oom?.top3 ?? 0) >= 1) {
-    badges.push({ emoji: "\u{1F949}", label: "Top 3 Finish" });
-  } else if ((oom?.top10 ?? 0) >= 1) {
-    badges.push({ emoji: "\u{1F51F}", label: "Top 10 Finish" });
-  }
-  if (seasonEventCounts && seasonEventCounts.played > 0 && (oom?.events_played ?? 0) >= seasonEventCounts.played) {
-    badges.push({ emoji: "\u{1F4AA}", label: "TPT Veteran" });
-  }
+  const badges = getAchievementBadges(
+    { rank: oom?.rank ?? null, wins: oom?.wins ?? 0, top3: oom?.top3 ?? 0, top10: oom?.top10 ?? 0, eventsPlayed: oom?.events_played ?? 0 },
+    seasonEventCounts?.played ?? 0,
+  );
 
   const stablefordScores = results.map((r) => r.event_scores?.stableford_points).filter((v): v is number => v != null);
   const bestFinish = results.length ? Math.min(...results.map((r) => r.position)) : null;
