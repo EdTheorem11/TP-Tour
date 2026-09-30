@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/server";
 import { getEventEntriesAdmin } from "@/lib/data/admin";
-import { generateTeeSheet } from "@/lib/actions/admin-events";
+import { generateTeeSheet, updateEntryGroups, applyTeeTimesToGroups } from "@/lib/actions/admin-events";
 import { Button, LinkButton } from "@/components/ui/button";
 import { PrintButton } from "@/components/admin/print-button";
 import { AutoToast } from "@/components/admin/auto-toast";
@@ -35,10 +35,10 @@ export default async function DaySheetPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ generated?: string; error?: string }>;
+  searchParams: Promise<{ generated?: string; groupsSaved?: string; error?: string }>;
 }) {
   const { id } = await params;
-  const { generated, error: errorMessage } = await searchParams;
+  const { generated, groupsSaved, error: errorMessage } = await searchParams;
   const supabase = await createClient();
   const { data: event } = await supabase.from("events").select("*, golf_clubs(name)").eq("id", id).single();
   if (!event) notFound();
@@ -58,6 +58,7 @@ export default async function DaySheetPage({
     }
   }
   const groupNumbers = [...grouped.keys()].sort((a, b) => a - b);
+  const entriesAlphabetical = [...entries].sort((a, b) => entryName(a).localeCompare(entryName(b)));
 
   return (
     <div>
@@ -76,27 +77,90 @@ export default async function DaySheetPage({
           <AutoToast message="Tee times generated." variant="success" cleanHref={`/admin/events/${id}/day-sheet`} />
         </div>
       )}
+      {groupsSaved === "1" && (
+        <div className="print:hidden">
+          <AutoToast message="Groups saved." variant="success" cleanHref={`/admin/events/${id}/day-sheet`} />
+        </div>
+      )}
       {errorMessage && (
         <div className="mt-6 border border-red-500/40 bg-red-500/10 px-5 py-3 text-sm text-red-400 print:hidden">{errorMessage}</div>
       )}
 
-      <div className="mt-8 max-w-md border border-white/10 bg-tp-dark p-6 print:hidden">
-        <h2 className="font-heading text-sm font-bold uppercase text-tp-offwhite">Generate Tee Times</h2>
+      <div className="mt-8 grid gap-6 lg:grid-cols-2 print:hidden">
+        <div className="border border-white/10 bg-tp-dark p-6">
+          <h2 className="font-heading text-sm font-bold uppercase text-tp-offwhite">Quick Auto-Split</h2>
+          <p className="mt-1 text-xs text-tp-offwhite/50">
+            {entries.length} confirmed player{entries.length === 1 ? "" : "s"} will be split evenly across the tee
+            times, in entry order. Use this when there are no specific pairing requests.
+          </p>
+          <form action={generateTeeSheet.bind(null, id)} className="mt-4 space-y-4">
+            <Field label="Start Time">
+              <input type="time" name="start_time" required className={inputClass} defaultValue={eventDetails.first_tee_time ?? ""} />
+            </Field>
+            <Field label="Gap Between Tee Times (minutes)">
+              <input type="number" name="gap_minutes" min="1" defaultValue="10" required className={inputClass} />
+            </Field>
+            <Field label="Number of Tee Times">
+              <input type="number" name="tee_time_count" min="1" required className={inputClass} />
+            </Field>
+            <Button type="submit" variant="gold" size="sm">Generate</Button>
+          </form>
+        </div>
+
+        <div className="border border-white/10 bg-tp-dark p-6">
+          <h2 className="font-heading text-sm font-bold uppercase text-tp-offwhite">Apply Times to Groups</h2>
+          <p className="mt-1 text-xs text-tp-offwhite/50">
+            Once players are assigned to groups below (however they got there), use this to time them up — group 1
+            tees off at the start time, group 2 at start + gap, and so on.
+          </p>
+          <form action={applyTeeTimesToGroups.bind(null, id)} className="mt-4 space-y-4">
+            <Field label="Start Time">
+              <input type="time" name="start_time" required className={inputClass} defaultValue={eventDetails.first_tee_time ?? ""} />
+            </Field>
+            <Field label="Gap Between Tee Times (minutes)">
+              <input type="number" name="gap_minutes" min="1" defaultValue="10" required className={inputClass} />
+            </Field>
+            <Button type="submit" variant="outline" size="sm">Apply Tee Times</Button>
+          </form>
+        </div>
+      </div>
+
+      <div className="mt-6 border border-white/10 bg-tp-dark p-6 print:hidden">
+        <h2 className="font-heading text-sm font-bold uppercase text-tp-offwhite">Assign Players to Groups</h2>
         <p className="mt-1 text-xs text-tp-offwhite/50">
-          {entries.length} confirmed player{entries.length === 1 ? "" : "s"} will be split evenly across the tee
-          times, in entry order. Re-generating overwrites the assignment below.
+          Set a group number for each player to honour specific pairing requests. Players sharing a group number will
+          be grouped together once you apply tee times above. Leave blank to leave someone unassigned.
         </p>
-        <form action={generateTeeSheet.bind(null, id)} className="mt-4 space-y-4">
-          <Field label="Start Time">
-            <input type="time" name="start_time" required className={inputClass} defaultValue={eventDetails.first_tee_time ?? ""} />
-          </Field>
-          <Field label="Gap Between Tee Times (minutes)">
-            <input type="number" name="gap_minutes" min="1" defaultValue="10" required className={inputClass} />
-          </Field>
-          <Field label="Number of Tee Times">
-            <input type="number" name="tee_time_count" min="1" required className={inputClass} />
-          </Field>
-          <Button type="submit" variant="gold" size="sm">Generate</Button>
+        <form action={updateEntryGroups.bind(null, id)} className="mt-4">
+          <div className="max-h-96 overflow-y-auto border border-white/10">
+            <table className="w-full border-collapse text-left text-sm">
+              <thead className="sticky top-0 bg-tp-dark">
+                <tr className="border-b border-white/10 text-[10px] font-semibold uppercase tracking-[0.1em] text-tp-offwhite/40">
+                  <th className="px-3 py-2">Player</th>
+                  <th className="px-3 py-2">Hcp</th>
+                  <th className="w-24 px-3 py-2">Group</th>
+                </tr>
+              </thead>
+              <tbody>
+                {entriesAlphabetical.map((entry) => (
+                  <tr key={entry.id} className="border-b border-white/5">
+                    <td className="px-3 py-2 text-tp-offwhite">{entryName(entry)}</td>
+                    <td className="px-3 py-2 text-tp-offwhite/60">{formatHandicap(entryHandicap(entry))}</td>
+                    <td className="px-3 py-2">
+                      <input
+                        type="number"
+                        name={`group_${entry.id}`}
+                        min="1"
+                        defaultValue={entry.group_number ?? ""}
+                        className={`${inputClass} py-1.5`}
+                      />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <Button type="submit" variant="gold" size="sm" className="mt-4">Save Groups</Button>
         </form>
       </div>
 

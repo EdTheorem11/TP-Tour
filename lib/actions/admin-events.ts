@@ -343,6 +343,89 @@ export async function generateTeeSheet(eventId: string, formData: FormData) {
   redirect(`/admin/events/${eventId}/day-sheet?generated=1`);
 }
 
+// Manual counterpart to generateTeeSheet — sets each confirmed entry's group
+// number individually from a `group_<entryId>` field per player, so specific
+// pairing requests can be honoured instead of an even auto-split. Leaves
+// tee_time untouched; pair with applyTeeTimesToGroups to fill those in.
+export async function updateEntryGroups(eventId: string, formData: FormData) {
+  const { supabase, adminId } = await requireAdmin();
+
+  const { data: entries } = await supabase
+    .from("event_entries")
+    .select("id")
+    .eq("event_id", eventId)
+    .eq("status", "confirmed");
+
+  if (!entries) redirect(`/admin/events/${eventId}/day-sheet?error=${encodeURIComponent("Couldn't load entries.")}`);
+
+  const updates = entries
+    .map((e) => ({ id: e.id, group: num(formData, `group_${e.id}`) }))
+    .filter((u) => u.group !== null && u.group > 0);
+
+  await Promise.all(updates.map((u) => supabase.from("event_entries").update({ group_number: u.group }).eq("id", u.id)));
+
+  await supabase.from("admin_audit_log").insert({
+    admin_id: adminId,
+    action: "update_tee_groups",
+    entity_type: "events",
+    entity_id: eventId,
+    after: { assigned: updates.length },
+  });
+
+  revalidatePath(`/admin/events/${eventId}/day-sheet`);
+  redirect(`/admin/events/${eventId}/day-sheet?groupsSaved=1`);
+}
+
+// Times up whatever groups are currently set on confirmed entries (however
+// they got there — manual or auto-split) using each group's own number as
+// its order: group 1 tees off at start_time, group 2 at start_time +
+// gap_minutes, and so on. Entries with no group number are left alone.
+export async function applyTeeTimesToGroups(eventId: string, formData: FormData) {
+  const { supabase, adminId } = await requireAdmin();
+
+  const startTime = str(formData, "start_time");
+  const gapMinutes = num(formData, "gap_minutes");
+  if (!startTime || !/^\d{1,2}:\d{2}$/.test(startTime) || !gapMinutes || gapMinutes <= 0) {
+    redirect(`/admin/events/${eventId}/day-sheet?error=${encodeURIComponent("Enter a start time and a gap greater than 0.")}`);
+  }
+
+  const { data: entries } = await supabase
+    .from("event_entries")
+    .select("id, group_number")
+    .eq("event_id", eventId)
+    .eq("status", "confirmed")
+    .not("group_number", "is", null);
+
+  if (!entries || entries.length === 0) {
+    redirect(`/admin/events/${eventId}/day-sheet?error=${encodeURIComponent("No groups assigned yet — assign players to groups first.")}`);
+  }
+
+  const groupNumbers = [...new Set(entries.map((e) => e.group_number as number))].sort((a, b) => a - b);
+  const [startHour, startMin] = startTime.split(":").map(Number);
+  const startTotalMinutes = startHour * 60 + startMin;
+  const timeByGroup = new Map(
+    groupNumbers.map((g, i) => {
+      const minutes = (startTotalMinutes + i * gapMinutes) % 1440;
+      return [g, `${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`];
+    }),
+  );
+
+  await Promise.all(
+    entries.map((e) => supabase.from("event_entries").update({ tee_time: timeByGroup.get(e.group_number as number) }).eq("id", e.id)),
+  );
+
+  await supabase.from("admin_audit_log").insert({
+    admin_id: adminId,
+    action: "apply_tee_times_to_groups",
+    entity_type: "events",
+    entity_id: eventId,
+    after: { start_time: startTime, gap_minutes: gapMinutes, groups: groupNumbers.length },
+  });
+
+  revalidatePath(`/admin/events/${eventId}/day-sheet`);
+  redirect(`/admin/events/${eventId}/day-sheet?generated=1`);
+}
+
 // ---------------------------------------------------------------------------
 // Golf clubs / courses / partners assignment
 // ---------------------------------------------------------------------------
