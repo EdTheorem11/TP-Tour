@@ -87,6 +87,11 @@ export default async function DaySheetPage({
     if (holeA !== holeB) return holeA - holeB;
     return a - b;
   });
+  // Plain numeric order for the Set Starting Holes input form — the hole-sorted
+  // groupNumbers above is right for the printed sheet, but jumps around
+  // confusingly (1,3,5...17,2,4...) once holes are set, making groups look
+  // missing rather than just reordered.
+  const groupNumbersAscending = [...grouped.keys()].sort((a, b) => a - b);
   const boardEntries: BoardEntry[] = entries.map((e) => ({
     id: e.id,
     name: e.is_guest ? (e.guest_name ?? "") : `${e.member_profiles?.first_name ?? ""} ${e.member_profiles?.last_name ?? ""}`.trim(),
@@ -172,7 +177,7 @@ export default async function DaySheetPage({
           </p>
           <form action={updateGroupStartingHoles.bind(null, id)} className="mt-4">
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              {groupNumbers.map((g) => (
+              {groupNumbersAscending.map((g) => (
                 <Field key={g} label={`Group ${g}`}>
                   <input
                     type="number"

@@ -20,6 +20,15 @@ interface BoardState {
   groupOrder: number[];
 }
 
+// Mirrors the printed day sheet: the 1st & 2nd player in a group are one
+// pair, the 3rd & 4th are the other, so the board should show the same
+// pairing rather than leaving admins to guess it from a plain list.
+function chunkPairs<T>(list: T[]): T[][] {
+  const rows: T[][] = [];
+  for (let i = 0; i < list.length; i += 2) rows.push(list.slice(i, i + 2));
+  return rows;
+}
+
 function buildInitialState(entries: BoardEntry[]): BoardState {
   const groups: Record<number, string[]> = {};
   const unassigned: string[] = [];
@@ -220,8 +229,18 @@ export function GroupBoard({ eventId, entries }: { eventId: string; entries: Boa
                 )}
               </div>
               <div className="mt-3 space-y-2">
-                {ids.map((id) => (
-                  <PlayerCard key={id} id={id} />
+                {chunkPairs(ids).map((pairIds, ri) => (
+                  <div
+                    key={ri}
+                    className={clsx(
+                      "space-y-1.5 rounded-md border p-1.5",
+                      ri % 2 === 0 ? "border-tp-gold/40 bg-tp-gold/[0.06]" : "border-white/15 bg-white/[0.03]",
+                    )}
+                  >
+                    {pairIds.map((id) => (
+                      <PlayerCard key={id} id={id} />
+                    ))}
+                  </div>
                 ))}
                 {ids.length === 0 && <p className="py-2 text-center text-xs text-tp-offwhite/30">Drop players here</p>}
               </div>
