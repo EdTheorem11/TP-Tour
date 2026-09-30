@@ -12,6 +12,14 @@ export interface BoardEntry {
   isGuest: boolean;
   groupNumber: number | null;
   groupPosition: number | null;
+  teeTime: string | null;
+  startingHole: number | null;
+}
+
+function ordinal(n: number): string {
+  const s = ["th", "st", "nd", "rd"];
+  const v = n % 100;
+  return `${n}${s[(v - 20) % 10] ?? s[v] ?? s[0]}`;
 }
 
 interface BoardState {
@@ -193,6 +201,7 @@ export function GroupBoard({ eventId, entries }: { eventId: string; entries: Boa
         {state.groupOrder.map((g) => {
           const ids = state.groups[g] ?? [];
           const targetKey = `group-${g}`;
+          const teeInfo = ids.map((pid) => entryById.get(pid)).find((e) => e?.teeTime || e?.startingHole);
           return (
             <div
               key={g}
@@ -211,22 +220,32 @@ export function GroupBoard({ eventId, entries }: { eventId: string; entries: Boa
                 ids.length === 4 && "border-tp-gold/70",
               )}
             >
-              <div className="flex items-center justify-between">
-                <span className="flex h-6 min-w-6 items-center justify-center rounded-full bg-tp-gold px-1.5 font-heading text-xs font-bold text-tp-black">
-                  {g}
-                </span>
-                <span className="text-[11px] font-semibold uppercase tracking-[0.1em] text-tp-offwhite/40">
-                  {ids.length} player{ids.length === 1 ? "" : "s"}
-                </span>
-                {ids.length === 0 && (
-                  <button
-                    type="button"
-                    onClick={() => removeEmptyGroup(g)}
-                    className="text-[11px] font-semibold uppercase tracking-[0.1em] text-red-400 hover:underline"
-                  >
-                    Remove
-                  </button>
-                )}
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <span className="flex h-6 min-w-6 items-center justify-center rounded-full bg-tp-gold px-1.5 font-heading text-xs font-bold text-tp-black">
+                    {g}
+                  </span>
+                  {teeInfo && (
+                    <span className="text-xs font-semibold text-tp-gold">
+                      {teeInfo.teeTime ?? "Time TBC"}
+                      {teeInfo.startingHole ? ` · ${ordinal(teeInfo.startingHole)} Tee` : ""}
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] font-semibold uppercase tracking-[0.1em] text-tp-offwhite/40">
+                    {ids.length} player{ids.length === 1 ? "" : "s"}
+                  </span>
+                  {ids.length === 0 && (
+                    <button
+                      type="button"
+                      onClick={() => removeEmptyGroup(g)}
+                      className="text-[11px] font-semibold uppercase tracking-[0.1em] text-red-400 hover:underline"
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
               </div>
               <div className="mt-3 space-y-2">
                 {chunkPairs(ids).map((pairIds, ri) => (

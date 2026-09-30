@@ -99,6 +99,8 @@ export default async function DaySheetPage({
     isGuest: e.is_guest,
     groupNumber: e.group_number,
     groupPosition: e.group_position,
+    teeTime: e.tee_time,
+    startingHole: e.starting_hole,
   }));
 
   return (
