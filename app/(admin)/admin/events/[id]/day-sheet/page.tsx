@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import Image from "next/image";
+import { clsx } from "clsx";
 import { createClient } from "@/lib/supabase/server";
 import { getEventEntriesAdmin } from "@/lib/data/admin";
 import { generateTeeSheet, updateGroupStartingHoles, applyTeeTimesToGroups } from "@/lib/actions/admin-events";
@@ -37,6 +38,12 @@ function ordinal(n: number): string {
   const s = ["th", "st", "nd", "rd"];
   const v = n % 100;
   return `${n}${s[(v - 20) % 10] ?? s[v] ?? s[0]}`;
+}
+
+function chunkPairs<T>(list: T[]): T[][] {
+  const rows: T[][] = [];
+  for (let i = 0; i < list.length; i += 2) rows.push(list.slice(i, i + 2));
+  return rows;
 }
 
 export default async function DaySheetPage({
@@ -246,14 +253,25 @@ export default async function DaySheetPage({
                             {!isSplitTee && hole !== null && ` · ${ordinal(hole)} Tee`}
                           </p>
                         </div>
-                        <ul className="mt-2 grid grid-cols-2 gap-x-6 gap-y-1">
-                          {players.map((p) => (
-                            <li key={p.id} className="flex items-baseline justify-between text-sm">
-                              <span>{entryName(p)}</span>
-                              <span className="text-black/50">{formatHandicap(entryHandicap(p))}</span>
-                            </li>
+                        <div className="mt-2 space-y-2">
+                          {chunkPairs(players).map((pair, ri) => (
+                            <div
+                              key={ri}
+                              className={clsx(
+                                "grid grid-cols-2 gap-x-6 rounded-md border px-3 py-1.5",
+                                ri % 2 === 0 ? "border-tp-gold/40 bg-tp-gold/[0.1]" : "border-tp-black/15 bg-tp-black/[0.03]",
+                              )}
+                              style={{ WebkitPrintColorAdjust: "exact", printColorAdjust: "exact", colorAdjust: "exact" }}
+                            >
+                              {pair.map((p) => (
+                                <div key={p.id} className="flex items-baseline justify-between text-sm">
+                                  <span>{entryName(p)}</span>
+                                  <span className="text-black/50">{formatHandicap(entryHandicap(p))}</span>
+                                </div>
+                              ))}
+                            </div>
                           ))}
-                        </ul>
+                        </div>
                       </div>
                     </div>
                   );
