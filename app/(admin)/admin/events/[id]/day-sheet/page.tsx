@@ -164,66 +164,89 @@ export default async function DaySheetPage({
         </form>
       </div>
 
-      {/* Day sheet — this is what prints, previewed here in its printed (light) styling */}
-      <div className="mx-auto mt-10 max-w-3xl bg-white p-10 text-black print:mt-0 print:max-w-none print:p-0">
-        <div className="flex items-center justify-between border-b-2 border-black pb-4">
-          <Image src="/logo.png" alt="TP Tour" width={800} height={150} className="h-9 w-auto" />
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-black/50">Day Sheet</p>
+      {/* Day sheet — this is what prints, previewed here in its printed styling */}
+      <div className="mx-auto mt-10 max-w-3xl overflow-hidden border border-black/10 bg-white text-black print:mt-0 print:max-w-none print:border-0">
+        <div
+          className="flex items-center justify-between bg-tp-black px-10 py-6"
+          style={{ WebkitPrintColorAdjust: "exact", printColorAdjust: "exact", colorAdjust: "exact" }}
+        >
+          <Image src="/logo.png" alt="TP Tour" width={800} height={150} className="h-8 w-auto" />
+          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-tp-gold">Day Sheet</p>
         </div>
 
-        <h2 className="mt-6 text-3xl font-bold uppercase">{eventDetails.name}</h2>
-        <p className="mt-1 text-black/70">
-          {tbc(eventDetails.golf_clubs?.name)} &middot; {tbc(eventDetails.location)} &middot; {formatEventDateLong(eventDetails.event_date)}
-        </p>
-        <p className="mt-1 text-sm text-black/60">
-          Arrival {tbc(eventDetails.arrival_time)}
-        </p>
+        <div className="p-10">
+          <p className="text-xs font-semibold uppercase tracking-[0.35em] text-tp-gold">TP Tour</p>
+          <h2 className="mt-2 font-heading text-3xl font-bold uppercase tracking-tight text-tp-black">{eventDetails.name}</h2>
+          <p className="mt-2 text-black/70">
+            {tbc(eventDetails.golf_clubs?.name)} &middot; {tbc(eventDetails.location)} &middot; {formatEventDateLong(eventDetails.event_date)}
+          </p>
+          <p className="mt-1 text-sm text-black/50">
+            Arrival {tbc(eventDetails.arrival_time)}
+          </p>
 
-        <div className="mt-8">
-          <h3 className="text-lg font-bold uppercase">Tee Times</h3>
-          {groupNumbers.length === 0 ? (
-            <p className="mt-2 text-black/50">No tee times generated yet.</p>
-          ) : (
-            <div className="mt-3 space-y-5">
-              {groupNumbers.map((g) => {
-                const players = grouped.get(g)!;
-                return (
-                  <div key={g} className="break-inside-avoid">
-                    <p className="border-b border-black/20 pb-1 text-sm font-bold uppercase tracking-[0.08em]">
-                      {players[0].tee_time} &middot; Group {g}
-                    </p>
-                    <ul className="mt-2 grid grid-cols-2 gap-x-6 gap-y-1">
-                      {players.map((p) => (
-                        <li key={p.id} className="flex items-baseline justify-between text-sm">
-                          <span>{entryName(p)}</span>
-                          <span className="text-black/50">{formatHandicap(entryHandicap(p))}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+          <div className="mt-9">
+            <h3 className="font-heading text-lg font-bold uppercase tracking-tight text-tp-black">Tee Times</h3>
+            {groupNumbers.length === 0 ? (
+              <p className="mt-2 text-black/50">No tee times generated yet.</p>
+            ) : (
+              <div className="mt-4 space-y-5">
+                {groupNumbers.map((g) => {
+                  const players = grouped.get(g)!;
+                  return (
+                    <div key={g} className="break-inside-avoid">
+                      <div
+                        className="flex items-center gap-2 border-b-2 border-tp-gold pb-1.5"
+                        style={{ WebkitPrintColorAdjust: "exact", printColorAdjust: "exact", colorAdjust: "exact" }}
+                      >
+                        <span className="flex h-6 min-w-6 items-center justify-center rounded-full bg-tp-gold px-1.5 font-heading text-xs font-bold text-tp-black">
+                          {g}
+                        </span>
+                        <p className="text-sm font-bold uppercase tracking-[0.08em] text-tp-black">
+                          {tbc(players[0].tee_time)}
+                        </p>
+                      </div>
+                      <ul className="mt-2 grid grid-cols-2 gap-x-6 gap-y-1">
+                        {players.map((p) => (
+                          <li key={p.id} className="flex items-baseline justify-between text-sm">
+                            <span>{entryName(p)}</span>
+                            <span className="text-black/50">{formatHandicap(entryHandicap(p))}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
 
-          {unassigned.length > 0 && (
-            <div className="mt-6 break-inside-avoid">
-              <p className="border-b border-black/20 pb-1 text-sm font-bold uppercase tracking-[0.08em]">Not Yet Assigned</p>
-              <ul className="mt-2 grid grid-cols-2 gap-x-6 gap-y-1">
-                {unassigned.map((p) => (
-                  <li key={p.id} className="text-sm">{entryName(p)}</li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </div>
-
-        {eventDetails.prizes && (
-          <div className="mt-10 break-inside-avoid border-t-2 border-black pt-4">
-            <h3 className="text-lg font-bold uppercase">Prizes</h3>
-            <p className="mt-2 whitespace-pre-line text-sm text-black/80">{eventDetails.prizes}</p>
+            {unassigned.length > 0 && (
+              <div className="mt-6 break-inside-avoid">
+                <p className="border-b-2 border-black/20 pb-1.5 text-sm font-bold uppercase tracking-[0.08em] text-tp-black">
+                  Not Yet Assigned
+                </p>
+                <ul className="mt-2 grid grid-cols-2 gap-x-6 gap-y-1">
+                  {unassigned.map((p) => (
+                    <li key={p.id} className="text-sm">{entryName(p)}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
-        )}
+
+          {eventDetails.prizes && (
+            <div className="mt-10 break-inside-avoid border-t-2 border-tp-gold pt-4">
+              <h3 className="font-heading text-lg font-bold uppercase tracking-tight text-tp-black">Prizes</h3>
+              <p className="mt-2 whitespace-pre-line text-sm text-black/80">{eventDetails.prizes}</p>
+            </div>
+          )}
+        </div>
+
+        <div
+          className="border-t border-black/10 bg-tp-black px-10 py-4 text-center text-[10px] font-semibold uppercase tracking-[0.2em] text-tp-offwhite/50"
+          style={{ WebkitPrintColorAdjust: "exact", printColorAdjust: "exact", colorAdjust: "exact" }}
+        >
+          TP Tour &middot; Golf. Network. Compete. &middot; Dubai, United Arab Emirates
+        </div>
       </div>
     </div>
   );
