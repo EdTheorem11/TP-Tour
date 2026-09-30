@@ -3,7 +3,7 @@ import Image from "next/image";
 import { clsx } from "clsx";
 import { createClient } from "@/lib/supabase/server";
 import { getEventEntriesAdmin } from "@/lib/data/admin";
-import { generateTeeSheet, updateGroupStartingHoles, applyTeeTimesToGroups } from "@/lib/actions/admin-events";
+import { generateTeeSheet, updateGroupStartingHoles, applyTeeTimesToGroups, publishTeeTimes, unpublishTeeTimes } from "@/lib/actions/admin-events";
 import { Button, LinkButton } from "@/components/ui/button";
 import { PrintButton } from "@/components/admin/print-button";
 import { AutoToast } from "@/components/admin/auto-toast";
@@ -51,10 +51,16 @@ export default async function DaySheetPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ generated?: string; groupsSaved?: string; error?: string }>;
+  searchParams: Promise<{
+    generated?: string;
+    groupsSaved?: string;
+    teeTimesPublished?: string;
+    teeTimesUnpublished?: string;
+    error?: string;
+  }>;
 }) {
   const { id } = await params;
-  const { generated, groupsSaved, error: errorMessage } = await searchParams;
+  const { generated, groupsSaved, teeTimesPublished, teeTimesUnpublished, error: errorMessage } = await searchParams;
   const supabase = await createClient();
   const { data: event } = await supabase.from("events").select("*, golf_clubs(name)").eq("id", id).single();
   if (!event) notFound();
@@ -106,12 +112,30 @@ export default async function DaySheetPage({
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-4 print:hidden">
-        <h1 className="font-heading text-3xl font-bold uppercase text-tp-offwhite">
-          {eventDetails.name} &mdash; Day Sheet
-        </h1>
+        <div>
+          <h1 className="font-heading text-3xl font-bold uppercase text-tp-offwhite">
+            {eventDetails.name} &mdash; Day Sheet
+          </h1>
+          <p className="mt-1 text-xs font-semibold uppercase tracking-[0.1em] text-tp-offwhite/40">
+            {eventDetails.tee_times_published ? (
+              <span className="text-tp-gold">Published to event page</span>
+            ) : (
+              "Not published to event page yet"
+            )}
+          </p>
+        </div>
         <div className="flex gap-3">
           <LinkButton href={`/admin/events/${id}`} variant="outline" size="sm">Back to Event</LinkButton>
           <PrintButton />
+          {eventDetails.tee_times_published ? (
+            <form action={unpublishTeeTimes.bind(null, id)}>
+              <Button type="submit" variant="outline" size="sm">Unpublish</Button>
+            </form>
+          ) : (
+            <form action={publishTeeTimes.bind(null, id)}>
+              <Button type="submit" variant="gold" size="sm">Publish Tee Times</Button>
+            </form>
+          )}
         </div>
       </div>
 
@@ -123,6 +147,16 @@ export default async function DaySheetPage({
       {groupsSaved === "1" && (
         <div className="print:hidden">
           <AutoToast message="Groups saved." variant="success" cleanHref={`/admin/events/${id}/day-sheet`} />
+        </div>
+      )}
+      {teeTimesPublished === "1" && (
+        <div className="print:hidden">
+          <AutoToast message="Tee times published to the event page." variant="success" cleanHref={`/admin/events/${id}/day-sheet`} />
+        </div>
+      )}
+      {teeTimesUnpublished === "1" && (
+        <div className="print:hidden">
+          <AutoToast message="Tee times unpublished — the event page now shows the entry list again." variant="success" cleanHref={`/admin/events/${id}/day-sheet`} />
         </div>
       )}
       {errorMessage && (

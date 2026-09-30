@@ -482,6 +482,58 @@ export async function applyTeeTimesToGroups(eventId: string, formData: FormData)
   redirect(`/admin/events/${eventId}/day-sheet?generated=1`);
 }
 
+// Publishes the day sheet's current tee times/groups to the public event
+// page, replacing the plain entry list there with pairings and tee times.
+// This is only a visibility flag — the public page always reads the live
+// group/tee_time data, so any further edits here show up immediately once
+// published, with no need to re-publish.
+export async function publishTeeTimes(eventId: string) {
+  const { supabase, adminId } = await requireAdmin();
+
+  const { data: event } = await supabase.from("events").select("slug").eq("id", eventId).single();
+  if (!event) redirect(`/admin/events/${eventId}/day-sheet?error=${encodeURIComponent("Event not found.")}`);
+
+  const { error } = await supabase
+    .from("events")
+    .update({ tee_times_published: true, tee_times_published_at: new Date().toISOString() })
+    .eq("id", eventId);
+  if (error) redirect(`/admin/events/${eventId}/day-sheet?error=${encodeURIComponent(error.message)}`);
+
+  await supabase.from("admin_audit_log").insert({
+    admin_id: adminId,
+    action: "publish_tee_times",
+    entity_type: "events",
+    entity_id: eventId,
+    after: { published: true },
+  });
+
+  revalidatePath(`/admin/events/${eventId}/day-sheet`);
+  revalidatePath(`/events/${event.slug}`);
+  redirect(`/admin/events/${eventId}/day-sheet?teeTimesPublished=1`);
+}
+
+export async function unpublishTeeTimes(eventId: string) {
+  const { supabase, adminId } = await requireAdmin();
+
+  const { data: event } = await supabase.from("events").select("slug").eq("id", eventId).single();
+  if (!event) redirect(`/admin/events/${eventId}/day-sheet?error=${encodeURIComponent("Event not found.")}`);
+
+  const { error } = await supabase.from("events").update({ tee_times_published: false }).eq("id", eventId);
+  if (error) redirect(`/admin/events/${eventId}/day-sheet?error=${encodeURIComponent(error.message)}`);
+
+  await supabase.from("admin_audit_log").insert({
+    admin_id: adminId,
+    action: "unpublish_tee_times",
+    entity_type: "events",
+    entity_id: eventId,
+    after: { published: false },
+  });
+
+  revalidatePath(`/admin/events/${eventId}/day-sheet`);
+  revalidatePath(`/events/${event.slug}`);
+  redirect(`/admin/events/${eventId}/day-sheet?teeTimesUnpublished=1`);
+}
+
 // ---------------------------------------------------------------------------
 // Golf clubs / courses / partners assignment
 // ---------------------------------------------------------------------------

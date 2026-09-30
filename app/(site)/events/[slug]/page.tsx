@@ -16,11 +16,35 @@ import {
   getMyEventEntry,
   getMyWaitingListEntry,
   getPartnersForEvent,
+  getPublishedTeeSheet,
+  type PublishedTeeSheetEntry,
 } from "@/lib/data/site";
+import { clsx } from "clsx";
 import { getCurrentProfile } from "@/lib/data/current-user";
 import { FORMAT_LABELS } from "@/lib/types";
 import { formatEventDateLong, formatHandicap, tbc } from "@/lib/format";
 import type { Metadata } from "next";
+
+function teeEntryName(entry: PublishedTeeSheetEntry): string {
+  if (entry.is_guest) return `${entry.guest_name} (Guest)`;
+  return `${entry.member_profiles?.first_name ?? ""} ${entry.member_profiles?.last_name ?? ""}`.trim();
+}
+
+function teeEntryHandicap(entry: PublishedTeeSheetEntry): number | null {
+  return entry.is_guest ? entry.playing_handicap : (entry.member_profiles?.current_handicap ?? null);
+}
+
+function ordinal(n: number): string {
+  const s = ["th", "st", "nd", "rd"];
+  const v = n % 100;
+  return `${n}${s[(v - 20) % 10] ?? s[v] ?? s[0]}`;
+}
+
+function chunkPairs<T>(list: T[]): T[][] {
+  const rows: T[][] = [];
+  for (let i = 0; i < list.length; i += 2) rows.push(list.slice(i, i + 2));
+  return rows;
+}
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
@@ -50,6 +74,27 @@ export default async function EventDetailPage({ params }: { params: Promise<{ sl
   const myEntry = profile ? await getMyEventEntry(event.id, profile.id) : null;
   const myWaitingListEntry = profile && !myEntry ? await getMyWaitingListEntry(event.id, profile.id) : null;
   const myGuests = profile ? entryList.filter((e) => e.is_guest && e.member_id === profile.id) : [];
+
+  const teeSheet = event.tee_times_published ? await getPublishedTeeSheet(event.id) : [];
+  const teeGrouped = new Map<number, PublishedTeeSheetEntry[]>();
+  for (const entry of teeSheet) {
+    const g = entry.group_number as number;
+    const list = teeGrouped.get(g) ?? [];
+    list.push(entry);
+    teeGrouped.set(g, list);
+  }
+  for (const list of teeGrouped.values()) {
+    list.sort((a, b) => (a.group_position ?? 999) - (b.group_position ?? 999));
+  }
+  const teeHoleByGroup = new Map<number, number | null>();
+  for (const g of teeGrouped.keys()) teeHoleByGroup.set(g, teeGrouped.get(g)![0].starting_hole);
+  const teeIsSplitTee = new Set([...teeHoleByGroup.values()].filter((h) => h !== null)).size > 1;
+  const teeGroupNumbers = [...teeGrouped.keys()].sort((a, b) => {
+    const holeA = teeHoleByGroup.get(a) ?? 999;
+    const holeB = teeHoleByGroup.get(b) ?? 999;
+    if (holeA !== holeB) return holeA - holeB;
+    return a - b;
+  });
 
   const facts = [
     { label: "Date", value: formatEventDateLong(event.event_date) },
@@ -254,29 +299,82 @@ export default async function EventDetailPage({ params }: { params: Promise<{ sl
               </div>
             )}
 
-            {event.status !== "completed" && entryList.length > 0 && (
+            {event.status !== "completed" && event.tee_times_published && teeGroupNumbers.length > 0 ? (
               <div className="mt-10">
-                <h2 className="font-heading text-xl font-bold uppercase text-tp-offwhite">
-                  Current Entry List ({entryList.length})
-                </h2>
-                <ul className="mt-4 divide-y divide-white/10 border-y border-white/10">
-                  {entryList.map((entry) => (
-                    <li key={entry.id} className="flex items-center justify-between py-3">
-                      <span className="text-tp-offwhite">
-                        {entry.is_guest ? entry.guest_name : `${entry.first_name} ${entry.last_name}`}
-                        {entry.is_guest && (
-                          <span className="ml-2 text-xs text-tp-offwhite/40">
-                            (Guest of {entry.first_name} {entry.last_name})
-                          </span>
+                <h2 className="font-heading text-xl font-bold uppercase text-tp-offwhite">Tee Times</h2>
+                <div className="mt-4 space-y-5">
+                  {teeGroupNumbers.map((g, i) => {
+                    const players = teeGrouped.get(g)!;
+                    const hole = teeHoleByGroup.get(g) ?? null;
+                    const prevHole = i > 0 ? (teeHoleByGroup.get(teeGroupNumbers[i - 1]) ?? null) : undefined;
+                    const showHoleHeading = teeIsSplitTee && hole !== prevHole;
+                    return (
+                      <div key={g}>
+                        {showHoleHeading && (
+                          <p className="mb-2 font-heading text-sm font-bold uppercase tracking-[0.15em] text-tp-gold">
+                            {hole !== null ? `${ordinal(hole)} Tee` : "Starting Tee TBC"}
+                          </p>
                         )}
-                      </span>
-                      <span className="text-sm text-tp-offwhite/50">
-                        {formatHandicap(entry.is_guest ? entry.playing_handicap : entry.current_handicap)}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
+                        <div className="rounded-2xl border border-white/10 bg-tp-dark p-4 shadow-xl shadow-black/20">
+                          <div className="flex items-center gap-2 border-b-2 border-tp-gold pb-1.5">
+                            <span className="flex h-6 min-w-6 items-center justify-center rounded-full bg-tp-gold px-1.5 font-heading text-xs font-bold text-tp-black">
+                              {g}
+                            </span>
+                            <p className="text-sm font-bold uppercase tracking-[0.08em] text-tp-offwhite">
+                              {tbc(players[0].tee_time)}
+                              {!teeIsSplitTee && hole !== null && ` · ${ordinal(hole)} Tee`}
+                            </p>
+                          </div>
+                          <div className="mt-2 space-y-1.5">
+                            {chunkPairs(players).map((pair, ri) => (
+                              <div
+                                key={ri}
+                                className={clsx(
+                                  "grid grid-cols-2 gap-x-6 rounded-md border px-3 py-1.5",
+                                  ri % 2 === 0 ? "border-tp-gold/30 bg-tp-gold/[0.06]" : "border-white/10 bg-white/[0.02]",
+                                )}
+                              >
+                                {pair.map((p) => (
+                                  <div key={p.id} className="flex items-baseline justify-between text-sm">
+                                    <span className="text-tp-offwhite">{teeEntryName(p)}</span>
+                                    <span className="text-tp-offwhite/50">{formatHandicap(teeEntryHandicap(p))}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
+            ) : (
+              event.status !== "completed" &&
+              entryList.length > 0 && (
+                <div className="mt-10">
+                  <h2 className="font-heading text-xl font-bold uppercase text-tp-offwhite">
+                    Current Entry List ({entryList.length})
+                  </h2>
+                  <ul className="mt-4 divide-y divide-white/10 border-y border-white/10">
+                    {entryList.map((entry) => (
+                      <li key={entry.id} className="flex items-center justify-between py-3">
+                        <span className="text-tp-offwhite">
+                          {entry.is_guest ? entry.guest_name : `${entry.first_name} ${entry.last_name}`}
+                          {entry.is_guest && (
+                            <span className="ml-2 text-xs text-tp-offwhite/40">
+                              (Guest of {entry.first_name} {entry.last_name})
+                            </span>
+                          )}
+                        </span>
+                        <span className="text-sm text-tp-offwhite/50">
+                          {formatHandicap(entry.is_guest ? entry.playing_handicap : entry.current_handicap)}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )
             )}
           </div>
 

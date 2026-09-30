@@ -131,6 +131,8 @@ export interface TourEvent {
   status: EventStatus;
   results_published: boolean;
   results_published_at: string | null;
+  tee_times_published: boolean;
+  tee_times_published_at: string | null;
   attendee_thank_you_sent_at: string | null;
   golf_clubs?: GolfClub | null;
   courses?: Course | null;
