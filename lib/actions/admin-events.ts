@@ -345,8 +345,10 @@ export async function generateTeeSheet(eventId: string, formData: FormData) {
 
 // Manual counterpart to generateTeeSheet — sets each confirmed entry's group
 // number individually from a `group_<entryId>` field per player, so specific
-// pairing requests can be honoured instead of an even auto-split. Leaves
-// tee_time untouched; pair with applyTeeTimesToGroups to fill those in.
+// pairing requests can be honoured instead of an even auto-split. Also saves
+// each player's order within their group from a `position_<entryId>` field,
+// so pairs within a 4-ball can be manually reordered. Leaves tee_time
+// untouched; pair with applyTeeTimesToGroups to fill those in.
 export async function updateEntryGroups(eventId: string, formData: FormData) {
   const { supabase, adminId } = await requireAdmin();
 
@@ -358,18 +360,24 @@ export async function updateEntryGroups(eventId: string, formData: FormData) {
 
   if (!entries) redirect(`/admin/events/${eventId}/day-sheet?error=${encodeURIComponent("Couldn't load entries.")}`);
 
-  const updates = entries
-    .map((e) => ({ id: e.id, group: num(formData, `group_${e.id}`) }))
-    .filter((u) => u.group !== null && u.group > 0);
+  const updates = entries.map((e) => ({
+    id: e.id,
+    group: num(formData, `group_${e.id}`),
+    position: num(formData, `position_${e.id}`),
+  }));
 
-  await Promise.all(updates.map((u) => supabase.from("event_entries").update({ group_number: u.group }).eq("id", u.id)));
+  const grouped = updates.filter((u) => u.group !== null && u.group > 0);
+
+  await Promise.all(
+    grouped.map((u) => supabase.from("event_entries").update({ group_number: u.group, group_position: u.position }).eq("id", u.id)),
+  );
 
   await supabase.from("admin_audit_log").insert({
     admin_id: adminId,
     action: "update_tee_groups",
     entity_type: "events",
     entity_id: eventId,
-    after: { assigned: updates.length },
+    after: { assigned: grouped.length },
   });
 
   revalidatePath(`/admin/events/${eventId}/day-sheet`);

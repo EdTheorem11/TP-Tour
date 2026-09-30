@@ -17,6 +17,7 @@ interface EntryRow {
   guest_name: string | null;
   tee_time: string | null;
   group_number: number | null;
+  group_position: number | null;
   starting_hole: number | null;
   playing_handicap: number | null;
   member_profiles: { first_name: string; last_name: string; current_handicap: number | null } | null;
@@ -64,6 +65,9 @@ export default async function DaySheetPage({
       grouped.set(entry.group_number, list);
     }
   }
+  for (const list of grouped.values()) {
+    list.sort((a, b) => (a.group_position ?? 999) - (b.group_position ?? 999));
+  }
   const holeByGroup = new Map<number, number | null>();
   for (const g of grouped.keys()) holeByGroup.set(g, grouped.get(g)![0].starting_hole);
   const distinctHoles = [...new Set(grouped.keys())].length ? [...new Set([...holeByGroup.values()])].sort((a, b) => (a ?? 0) - (b ?? 0)) : [];
@@ -75,7 +79,18 @@ export default async function DaySheetPage({
     if (holeA !== holeB) return holeA - holeB;
     return a - b;
   });
-  const entriesAlphabetical = [...entries].sort((a, b) => entryName(a).localeCompare(entryName(b)));
+  // Grouped by current group number (unassigned last), then by position within
+  // the group, so it's easy to see each 4-ball together in printed order while
+  // swapping people or reordering them.
+  const entriesForAssignment = [...entries].sort((a, b) => {
+    const groupA = a.group_number ?? Infinity;
+    const groupB = b.group_number ?? Infinity;
+    if (groupA !== groupB) return groupA - groupB;
+    const posA = a.group_position ?? 999;
+    const posB = b.group_position ?? 999;
+    if (posA !== posB) return posA - posB;
+    return entryName(a).localeCompare(entryName(b));
+  });
 
   return (
     <div>
@@ -176,7 +191,8 @@ export default async function DaySheetPage({
         <h2 className="font-heading text-sm font-bold uppercase text-tp-offwhite">Assign Players to Groups</h2>
         <p className="mt-1 text-xs text-tp-offwhite/50">
           Set a group number for each player to honour specific pairing requests. Players sharing a group number will
-          be grouped together once you apply tee times above. Leave blank to leave someone unassigned.
+          be grouped together once you apply tee times above. Use Pos to control their order within the group (e.g.
+          on the printed sheet or scorecard) — lowest goes first. Leave blank to leave someone unassigned.
         </p>
         <form action={updateEntryGroups.bind(null, id)} className="mt-4">
           <div className="max-h-96 overflow-y-auto border border-white/10">
@@ -185,11 +201,12 @@ export default async function DaySheetPage({
                 <tr className="border-b border-white/10 text-[10px] font-semibold uppercase tracking-[0.1em] text-tp-offwhite/40">
                   <th className="px-3 py-2">Player</th>
                   <th className="px-3 py-2">Hcp</th>
-                  <th className="w-24 px-3 py-2">Group</th>
+                  <th className="w-20 px-3 py-2">Group</th>
+                  <th className="w-16 px-3 py-2">Pos</th>
                 </tr>
               </thead>
               <tbody>
-                {entriesAlphabetical.map((entry) => (
+                {entriesForAssignment.map((entry) => (
                   <tr key={entry.id} className="border-b border-white/5">
                     <td className="px-3 py-2 text-tp-offwhite">{entryName(entry)}</td>
                     <td className="px-3 py-2 text-tp-offwhite/60">{formatHandicap(entryHandicap(entry))}</td>
@@ -199,6 +216,16 @@ export default async function DaySheetPage({
                         name={`group_${entry.id}`}
                         min="1"
                         defaultValue={entry.group_number ?? ""}
+                        className={`${inputClass} py-1.5`}
+                      />
+                    </td>
+                    <td className="px-3 py-2">
+                      <input
+                        type="number"
+                        name={`position_${entry.id}`}
+                        min="1"
+                        max="4"
+                        defaultValue={entry.group_position ?? ""}
                         className={`${inputClass} py-1.5`}
                       />
                     </td>
