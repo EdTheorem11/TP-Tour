@@ -27,11 +27,11 @@ import type { Metadata } from "next";
 
 function teeEntryName(entry: PublishedTeeSheetEntry): string {
   if (entry.is_guest) return `${entry.guest_name} (Guest)`;
-  return `${entry.member_profiles?.first_name ?? ""} ${entry.member_profiles?.last_name ?? ""}`.trim();
+  return `${entry.first_name ?? ""} ${entry.last_name ?? ""}`.trim();
 }
 
 function teeEntryHandicap(entry: PublishedTeeSheetEntry): number | null {
-  return entry.is_guest ? entry.playing_handicap : (entry.member_profiles?.current_handicap ?? null);
+  return entry.is_guest ? entry.playing_handicap : entry.current_handicap;
 }
 
 function ordinal(n: number): string {

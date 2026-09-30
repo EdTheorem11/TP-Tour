@@ -240,23 +240,20 @@ export interface PublishedTeeSheetEntry {
   group_position: number | null;
   starting_hole: number | null;
   playing_handicap: number | null;
-  member_profiles: { first_name: string; last_name: string; current_handicap: number | null } | null;
+  first_name: string | null;
+  last_name: string | null;
+  current_handicap: number | null;
 }
 
 // Only called once an event's tee times are published (event.tee_times_published)
-// — reads the same live group/tee_time data the admin day sheet edits, so
-// the public page always reflects the current state, not a snapshot.
+// — reads the published_tee_sheet view rather than event_entries directly,
+// since event_entries RLS only lets a member see their own row (or an admin
+// see everyone). The view bypasses that the same way event_entry_list
+// already does, so every member sees the same published tee sheet, live.
 export async function getPublishedTeeSheet(eventId: string): Promise<PublishedTeeSheetEntry[]> {
   return safe(async () => {
     const supabase = await createClient();
-    const { data } = await supabase
-      .from("event_entries")
-      .select(
-        "id, is_guest, guest_name, tee_time, group_number, group_position, starting_hole, playing_handicap, member_profiles(first_name, last_name, current_handicap)",
-      )
-      .eq("event_id", eventId)
-      .eq("status", "confirmed")
-      .not("group_number", "is", null);
+    const { data } = await supabase.from("published_tee_sheet").select("*").eq("event_id", eventId);
     return (data as unknown as PublishedTeeSheetEntry[]) ?? [];
   }, []);
 }
