@@ -61,6 +61,7 @@ export default async function EditEventPage({
         <h1 className="font-heading text-3xl font-bold uppercase text-tp-offwhite">{(event as TourEvent).name}</h1>
         <div className="flex gap-3">
           <LinkButton href={`/admin/entries/${id}`} variant="outline" size="sm">Entries</LinkButton>
+          <LinkButton href={`/admin/events/${id}/day-sheet`} variant="outline" size="sm">Day Sheet</LinkButton>
           <LinkButton href={`/admin/scoring/${id}`} variant="outline" size="sm">Scoring</LinkButton>
         </div>
       </div>

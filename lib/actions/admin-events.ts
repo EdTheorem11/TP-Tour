@@ -279,6 +279,70 @@ export async function sendEventThankYouEmails(eventId: string): Promise<{ error?
   return { sent };
 }
 
+// Splits confirmed entrants evenly across the requested number of tee times
+// (in entry order), starting at start_time and spaced gap_minutes apart.
+// Re-running this for the same event overwrites any previous assignment.
+export async function generateTeeSheet(eventId: string, formData: FormData) {
+  const { supabase, adminId } = await requireAdmin();
+
+  const startTime = str(formData, "start_time");
+  const gapMinutes = num(formData, "gap_minutes");
+  const teeTimeCount = num(formData, "tee_time_count");
+
+  if (!startTime || !/^\d{1,2}:\d{2}$/.test(startTime) || !gapMinutes || gapMinutes <= 0 || !teeTimeCount || teeTimeCount <= 0) {
+    redirect(`/admin/events/${eventId}/day-sheet?error=${encodeURIComponent("Enter a start time, a gap greater than 0, and at least 1 tee time.")}`);
+  }
+
+  const { data: entries } = await supabase
+    .from("event_entries")
+    .select("id")
+    .eq("event_id", eventId)
+    .eq("status", "confirmed")
+    .order("entry_date", { ascending: true });
+
+  if (!entries || entries.length === 0) {
+    redirect(`/admin/events/${eventId}/day-sheet?error=${encodeURIComponent("No confirmed entries to assign tee times to.")}`);
+  }
+
+  const total = entries.length;
+  const base = Math.floor(total / teeTimeCount);
+  const remainder = total % teeTimeCount;
+  const [startHour, startMin] = startTime.split(":").map(Number);
+  const startTotalMinutes = startHour * 60 + startMin;
+
+  const updates: { id: string; tee_time: string; group_number: number }[] = [];
+  let entryIndex = 0;
+  for (let g = 0; g < teeTimeCount && entryIndex < total; g++) {
+    const groupSize = base + (g < remainder ? 1 : 0);
+    if (groupSize === 0) continue;
+    const minutes = (startTotalMinutes + g * gapMinutes) % 1440;
+    const teeTimeLabel = `${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`;
+    for (let p = 0; p < groupSize; p++) {
+      updates.push({ id: entries[entryIndex].id, tee_time: teeTimeLabel, group_number: g + 1 });
+      entryIndex++;
+    }
+  }
+
+  const { error } = await Promise.all(
+    updates.map((u) => supabase.from("event_entries").update({ tee_time: u.tee_time, group_number: u.group_number }).eq("id", u.id)),
+  ).then((results) => {
+    const failed = results.find((r) => r.error);
+    return { error: failed?.error ?? null };
+  });
+  if (error) redirect(`/admin/events/${eventId}/day-sheet?error=${encodeURIComponent(error.message)}`);
+
+  await supabase.from("admin_audit_log").insert({
+    admin_id: adminId,
+    action: "generate_tee_sheet",
+    entity_type: "events",
+    entity_id: eventId,
+    after: { start_time: startTime, gap_minutes: gapMinutes, tee_time_count: teeTimeCount, players: total },
+  });
+
+  revalidatePath(`/admin/events/${eventId}/day-sheet`);
+  redirect(`/admin/events/${eventId}/day-sheet?generated=1`);
+}
+
 // ---------------------------------------------------------------------------
 // Golf clubs / courses / partners assignment
 // ---------------------------------------------------------------------------
