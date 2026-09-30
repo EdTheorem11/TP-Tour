@@ -347,18 +347,40 @@ export async function generateTeeSheet(eventId: string, formData: FormData) {
 // from the drag-and-drop group board after every card move, with the full
 // desired state of every confirmed entry's group number and its order within
 // that group. No redirect, since the board stays mounted and applies changes
-// optimistically — this just persists them. Leaves tee_time untouched; pair
-// with applyTeeTimesToGroups to fill those in.
+// optimistically — this just persists them.
+//
+// A player moved to a *different* group has their tee_time cleared: it was
+// set for their old group's slot, and leaving it in place would show up as
+// that old time attached to the new group too — e.g. two groups both
+// appearing to tee off at the same time after a reshuffle, when really one
+// of them is just showing a stale value. Pure reordering within the same
+// group leaves tee_time alone, since the group's slot hasn't changed.
 export async function saveGroupAssignments(
   eventId: string,
   assignments: { id: string; group: number | null; position: number | null }[],
 ) {
   const { supabase, adminId } = await requireAdmin();
 
+  const { data: current } = await supabase
+    .from("event_entries")
+    .select("id, group_number")
+    .eq("event_id", eventId)
+    .in(
+      "id",
+      assignments.map((a) => a.id),
+    );
+  const currentGroupById = new Map((current ?? []).map((e) => [e.id, e.group_number as number | null]));
+
   await Promise.all(
-    assignments.map((a) =>
-      supabase.from("event_entries").update({ group_number: a.group, group_position: a.position }).eq("id", a.id),
-    ),
+    assignments.map((a) => {
+      const groupChanged = currentGroupById.get(a.id) !== a.group;
+      const update: { group_number: number | null; group_position: number | null; tee_time?: null } = {
+        group_number: a.group,
+        group_position: a.position,
+      };
+      if (groupChanged) update.tee_time = null;
+      return supabase.from("event_entries").update(update).eq("id", a.id);
+    }),
   );
 
   await supabase.from("admin_audit_log").insert({
