@@ -343,33 +343,22 @@ export async function generateTeeSheet(eventId: string, formData: FormData) {
   redirect(`/admin/events/${eventId}/day-sheet?generated=1`);
 }
 
-// Manual counterpart to generateTeeSheet — sets each confirmed entry's group
-// number individually from a `group_<entryId>` field per player, so specific
-// pairing requests can be honoured instead of an even auto-split. Also saves
-// each player's order within their group from a `position_<entryId>` field,
-// so pairs within a 4-ball can be manually reordered. Leaves tee_time
-// untouched; pair with applyTeeTimesToGroups to fill those in.
-export async function updateEntryGroups(eventId: string, formData: FormData) {
+// Manual counterpart to generateTeeSheet — called directly (not via a form)
+// from the drag-and-drop group board after every card move, with the full
+// desired state of every confirmed entry's group number and its order within
+// that group. No redirect, since the board stays mounted and applies changes
+// optimistically — this just persists them. Leaves tee_time untouched; pair
+// with applyTeeTimesToGroups to fill those in.
+export async function saveGroupAssignments(
+  eventId: string,
+  assignments: { id: string; group: number | null; position: number | null }[],
+) {
   const { supabase, adminId } = await requireAdmin();
 
-  const { data: entries } = await supabase
-    .from("event_entries")
-    .select("id")
-    .eq("event_id", eventId)
-    .eq("status", "confirmed");
-
-  if (!entries) redirect(`/admin/events/${eventId}/day-sheet?error=${encodeURIComponent("Couldn't load entries.")}`);
-
-  const updates = entries.map((e) => ({
-    id: e.id,
-    group: num(formData, `group_${e.id}`),
-    position: num(formData, `position_${e.id}`),
-  }));
-
-  const grouped = updates.filter((u) => u.group !== null && u.group > 0);
-
   await Promise.all(
-    grouped.map((u) => supabase.from("event_entries").update({ group_number: u.group, group_position: u.position }).eq("id", u.id)),
+    assignments.map((a) =>
+      supabase.from("event_entries").update({ group_number: a.group, group_position: a.position }).eq("id", a.id),
+    ),
   );
 
   await supabase.from("admin_audit_log").insert({
@@ -377,11 +366,10 @@ export async function updateEntryGroups(eventId: string, formData: FormData) {
     action: "update_tee_groups",
     entity_type: "events",
     entity_id: eventId,
-    after: { assigned: grouped.length },
+    after: { assigned: assignments.filter((a) => a.group !== null).length },
   });
 
   revalidatePath(`/admin/events/${eventId}/day-sheet`);
-  redirect(`/admin/events/${eventId}/day-sheet?groupsSaved=1`);
 }
 
 // Manual counterpart to grouping — sets which hole each group starts from,

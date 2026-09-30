@@ -2,11 +2,12 @@ import { notFound } from "next/navigation";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/server";
 import { getEventEntriesAdmin } from "@/lib/data/admin";
-import { generateTeeSheet, updateEntryGroups, updateGroupStartingHoles, applyTeeTimesToGroups } from "@/lib/actions/admin-events";
+import { generateTeeSheet, updateGroupStartingHoles, applyTeeTimesToGroups } from "@/lib/actions/admin-events";
 import { Button, LinkButton } from "@/components/ui/button";
 import { PrintButton } from "@/components/admin/print-button";
 import { AutoToast } from "@/components/admin/auto-toast";
 import { Field, inputClass } from "@/components/admin/form";
+import { GroupBoard, type BoardEntry } from "@/components/admin/group-board";
 import { formatEventDateLong, formatHandicap, tbc } from "@/lib/format";
 import type { TourEvent } from "@/lib/types";
 
@@ -79,18 +80,14 @@ export default async function DaySheetPage({
     if (holeA !== holeB) return holeA - holeB;
     return a - b;
   });
-  // Grouped by current group number (unassigned last), then by position within
-  // the group, so it's easy to see each 4-ball together in printed order while
-  // swapping people or reordering them.
-  const entriesForAssignment = [...entries].sort((a, b) => {
-    const groupA = a.group_number ?? Infinity;
-    const groupB = b.group_number ?? Infinity;
-    if (groupA !== groupB) return groupA - groupB;
-    const posA = a.group_position ?? 999;
-    const posB = b.group_position ?? 999;
-    if (posA !== posB) return posA - posB;
-    return entryName(a).localeCompare(entryName(b));
-  });
+  const boardEntries: BoardEntry[] = entries.map((e) => ({
+    id: e.id,
+    name: e.is_guest ? (e.guest_name ?? "") : `${e.member_profiles?.first_name ?? ""} ${e.member_profiles?.last_name ?? ""}`.trim(),
+    handicap: formatHandicap(entryHandicap(e)),
+    isGuest: e.is_guest,
+    groupNumber: e.group_number,
+    groupPosition: e.group_position,
+  }));
 
   return (
     <div>
@@ -190,52 +187,12 @@ export default async function DaySheetPage({
       <div className="mt-6 border border-white/10 bg-tp-dark p-6 print:hidden">
         <h2 className="font-heading text-sm font-bold uppercase text-tp-offwhite">Assign Players to Groups</h2>
         <p className="mt-1 text-xs text-tp-offwhite/50">
-          Set a group number for each player to honour specific pairing requests. Players sharing a group number will
-          be grouped together once you apply tee times above. Use Pos to control their order within the group (e.g.
-          on the printed sheet or scorecard) — lowest goes first. Leave blank to leave someone unassigned.
+          Drag players between groups to honour specific pairing requests, or drag onto another player within a group
+          to reorder them. Changes save automatically. Use + Add Group for a new empty 4-ball.
         </p>
-        <form action={updateEntryGroups.bind(null, id)} className="mt-4">
-          <div className="max-h-96 overflow-y-auto border border-white/10">
-            <table className="w-full border-collapse text-left text-sm">
-              <thead className="sticky top-0 bg-tp-dark">
-                <tr className="border-b border-white/10 text-[10px] font-semibold uppercase tracking-[0.1em] text-tp-offwhite/40">
-                  <th className="px-3 py-2">Player</th>
-                  <th className="px-3 py-2">Hcp</th>
-                  <th className="w-20 px-3 py-2">Group</th>
-                  <th className="w-16 px-3 py-2">Pos</th>
-                </tr>
-              </thead>
-              <tbody>
-                {entriesForAssignment.map((entry) => (
-                  <tr key={entry.id} className="border-b border-white/5">
-                    <td className="px-3 py-2 text-tp-offwhite">{entryName(entry)}</td>
-                    <td className="px-3 py-2 text-tp-offwhite/60">{formatHandicap(entryHandicap(entry))}</td>
-                    <td className="px-3 py-2">
-                      <input
-                        type="number"
-                        name={`group_${entry.id}`}
-                        min="1"
-                        defaultValue={entry.group_number ?? ""}
-                        className={`${inputClass} py-1.5`}
-                      />
-                    </td>
-                    <td className="px-3 py-2">
-                      <input
-                        type="number"
-                        name={`position_${entry.id}`}
-                        min="1"
-                        max="4"
-                        defaultValue={entry.group_position ?? ""}
-                        className={`${inputClass} py-1.5`}
-                      />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <Button type="submit" variant="gold" size="sm" className="mt-4">Save Groups</Button>
-        </form>
+        <div className="mt-4">
+          <GroupBoard eventId={id} entries={boardEntries} />
+        </div>
       </div>
 
       {/* Day sheet — this is what prints, previewed here in its printed styling */}
@@ -276,11 +233,11 @@ export default async function DaySheetPage({
                           {hole !== null ? `${ordinal(hole)} Tee` : "Starting Tee TBC"}
                         </p>
                       )}
-                      <div className="break-inside-avoid">
-                        <div
-                          className="flex items-center gap-2 border-b-2 border-tp-gold pb-1.5"
-                          style={{ WebkitPrintColorAdjust: "exact", printColorAdjust: "exact", colorAdjust: "exact" }}
-                        >
+                      <div
+                        className="break-inside-avoid rounded-lg border-2 border-tp-black/10 p-4"
+                        style={{ WebkitPrintColorAdjust: "exact", printColorAdjust: "exact", colorAdjust: "exact" }}
+                      >
+                        <div className="flex items-center gap-2 border-b-2 border-tp-gold pb-1.5">
                           <span className="flex h-6 min-w-6 items-center justify-center rounded-full bg-tp-gold px-1.5 font-heading text-xs font-bold text-tp-black">
                             {g}
                           </span>
@@ -305,7 +262,7 @@ export default async function DaySheetPage({
             )}
 
             {unassigned.length > 0 && (
-              <div className="mt-6 break-inside-avoid">
+              <div className="mt-6 break-inside-avoid rounded-lg border-2 border-dashed border-black/20 p-4">
                 <p className="border-b-2 border-black/20 pb-1.5 text-sm font-bold uppercase tracking-[0.08em] text-tp-black">
                   Not Yet Assigned
                 </p>
