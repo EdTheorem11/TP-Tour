@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/server";
 import { getEventEntriesAdmin } from "@/lib/data/admin";
-import { generateTeeSheet, updateEntryGroups, applyTeeTimesToGroups } from "@/lib/actions/admin-events";
+import { generateTeeSheet, updateEntryGroups, updateGroupStartingHoles, applyTeeTimesToGroups } from "@/lib/actions/admin-events";
 import { Button, LinkButton } from "@/components/ui/button";
 import { PrintButton } from "@/components/admin/print-button";
 import { AutoToast } from "@/components/admin/auto-toast";
@@ -17,6 +17,7 @@ interface EntryRow {
   guest_name: string | null;
   tee_time: string | null;
   group_number: number | null;
+  starting_hole: number | null;
   playing_handicap: number | null;
   member_profiles: { first_name: string; last_name: string; current_handicap: number | null } | null;
 }
@@ -28,6 +29,12 @@ function entryName(entry: EntryRow): string {
 
 function entryHandicap(entry: EntryRow): number | null {
   return entry.is_guest ? entry.playing_handicap : (entry.member_profiles?.current_handicap ?? null);
+}
+
+function ordinal(n: number): string {
+  const s = ["th", "st", "nd", "rd"];
+  const v = n % 100;
+  return `${n}${s[(v - 20) % 10] ?? s[v] ?? s[0]}`;
 }
 
 export default async function DaySheetPage({
@@ -57,7 +64,17 @@ export default async function DaySheetPage({
       grouped.set(entry.group_number, list);
     }
   }
-  const groupNumbers = [...grouped.keys()].sort((a, b) => a - b);
+  const holeByGroup = new Map<number, number | null>();
+  for (const g of grouped.keys()) holeByGroup.set(g, grouped.get(g)![0].starting_hole);
+  const distinctHoles = [...new Set(grouped.keys())].length ? [...new Set([...holeByGroup.values()])].sort((a, b) => (a ?? 0) - (b ?? 0)) : [];
+  const isSplitTee = distinctHoles.filter((h) => h !== null).length > 1;
+
+  const groupNumbers = [...grouped.keys()].sort((a, b) => {
+    const holeA = holeByGroup.get(a) ?? 999;
+    const holeB = holeByGroup.get(b) ?? 999;
+    if (holeA !== holeB) return holeA - holeB;
+    return a - b;
+  });
   const entriesAlphabetical = [...entries].sort((a, b) => entryName(a).localeCompare(entryName(b)));
 
   return (
@@ -110,8 +127,9 @@ export default async function DaySheetPage({
         <div className="border border-white/10 bg-tp-dark p-6">
           <h2 className="font-heading text-sm font-bold uppercase text-tp-offwhite">Apply Times to Groups</h2>
           <p className="mt-1 text-xs text-tp-offwhite/50">
-            Once players are assigned to groups below (however they got there), use this to time them up — group 1
-            tees off at the start time, group 2 at start + gap, and so on.
+            Times up whatever groups are set below. Groups all get one sequence from the start time — unless you set
+            starting holes first, in which case each hole gets its own sequence, all starting at the same time (a
+            split tee start).
           </p>
           <form action={applyTeeTimesToGroups.bind(null, id)} className="mt-4 space-y-4">
             <Field label="Start Time">
@@ -124,6 +142,35 @@ export default async function DaySheetPage({
           </form>
         </div>
       </div>
+
+      {groupNumbers.length > 0 && (
+        <div className="mt-6 border border-white/10 bg-tp-dark p-6 print:hidden">
+          <h2 className="font-heading text-sm font-bold uppercase text-tp-offwhite">Set Starting Holes (Split Tee)</h2>
+          <p className="mt-1 text-xs text-tp-offwhite/50">
+            Only needed for a split tee start (e.g. some groups off the 1st, others off the 18th, all at the same
+            time). Leave blank for a normal single-tee start. Set a hole number per group, then use Apply Times to
+            Groups above.
+          </p>
+          <form action={updateGroupStartingHoles.bind(null, id)} className="mt-4">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              {groupNumbers.map((g) => (
+                <Field key={g} label={`Group ${g}`}>
+                  <input
+                    type="number"
+                    name={`hole_${g}`}
+                    min="1"
+                    max="18"
+                    placeholder="Hole"
+                    defaultValue={holeByGroup.get(g) ?? ""}
+                    className={inputClass}
+                  />
+                </Field>
+              ))}
+            </div>
+            <Button type="submit" variant="outline" size="sm" className="mt-4">Save Starting Holes</Button>
+          </form>
+        </div>
+      )}
 
       <div className="mt-6 border border-white/10 bg-tp-dark p-6 print:hidden">
         <h2 className="font-heading text-sm font-bold uppercase text-tp-offwhite">Assign Players to Groups</h2>
@@ -190,29 +237,40 @@ export default async function DaySheetPage({
               <p className="mt-2 text-black/50">No tee times generated yet.</p>
             ) : (
               <div className="mt-4 space-y-5">
-                {groupNumbers.map((g) => {
+                {groupNumbers.map((g, i) => {
                   const players = grouped.get(g)!;
+                  const hole = holeByGroup.get(g) ?? null;
+                  const prevHole = i > 0 ? (holeByGroup.get(groupNumbers[i - 1]) ?? null) : undefined;
+                  const showHoleHeading = isSplitTee && hole !== prevHole;
                   return (
-                    <div key={g} className="break-inside-avoid">
-                      <div
-                        className="flex items-center gap-2 border-b-2 border-tp-gold pb-1.5"
-                        style={{ WebkitPrintColorAdjust: "exact", printColorAdjust: "exact", colorAdjust: "exact" }}
-                      >
-                        <span className="flex h-6 min-w-6 items-center justify-center rounded-full bg-tp-gold px-1.5 font-heading text-xs font-bold text-tp-black">
-                          {g}
-                        </span>
-                        <p className="text-sm font-bold uppercase tracking-[0.08em] text-tp-black">
-                          {tbc(players[0].tee_time)}
+                    <div key={g}>
+                      {showHoleHeading && (
+                        <p className="mb-2 font-heading text-sm font-bold uppercase tracking-[0.15em] text-tp-gold">
+                          {hole !== null ? `${ordinal(hole)} Tee` : "Starting Tee TBC"}
                         </p>
+                      )}
+                      <div className="break-inside-avoid">
+                        <div
+                          className="flex items-center gap-2 border-b-2 border-tp-gold pb-1.5"
+                          style={{ WebkitPrintColorAdjust: "exact", printColorAdjust: "exact", colorAdjust: "exact" }}
+                        >
+                          <span className="flex h-6 min-w-6 items-center justify-center rounded-full bg-tp-gold px-1.5 font-heading text-xs font-bold text-tp-black">
+                            {g}
+                          </span>
+                          <p className="text-sm font-bold uppercase tracking-[0.08em] text-tp-black">
+                            {tbc(players[0].tee_time)}
+                            {!isSplitTee && hole !== null && ` · ${ordinal(hole)} Tee`}
+                          </p>
+                        </div>
+                        <ul className="mt-2 grid grid-cols-2 gap-x-6 gap-y-1">
+                          {players.map((p) => (
+                            <li key={p.id} className="flex items-baseline justify-between text-sm">
+                              <span>{entryName(p)}</span>
+                              <span className="text-black/50">{formatHandicap(entryHandicap(p))}</span>
+                            </li>
+                          ))}
+                        </ul>
                       </div>
-                      <ul className="mt-2 grid grid-cols-2 gap-x-6 gap-y-1">
-                        {players.map((p) => (
-                          <li key={p.id} className="flex items-baseline justify-between text-sm">
-                            <span>{entryName(p)}</span>
-                            <span className="text-black/50">{formatHandicap(entryHandicap(p))}</span>
-                          </li>
-                        ))}
-                      </ul>
                     </div>
                   );
                 })}

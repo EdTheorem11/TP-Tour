@@ -376,10 +376,53 @@ export async function updateEntryGroups(eventId: string, formData: FormData) {
   redirect(`/admin/events/${eventId}/day-sheet?groupsSaved=1`);
 }
 
+// Manual counterpart to grouping — sets which hole each group starts from,
+// from a `hole_<groupNumber>` field per distinct group. For a normal single
+// tee start, leave every group on the same hole (or blank); for a split tee
+// start, groups on different holes get their own independent time sequence
+// in applyTeeTimesToGroups, both starting at the same clock time.
+export async function updateGroupStartingHoles(eventId: string, formData: FormData) {
+  const { supabase, adminId } = await requireAdmin();
+
+  const { data: entries } = await supabase
+    .from("event_entries")
+    .select("id, group_number")
+    .eq("event_id", eventId)
+    .eq("status", "confirmed")
+    .not("group_number", "is", null);
+
+  if (!entries) redirect(`/admin/events/${eventId}/day-sheet?error=${encodeURIComponent("Couldn't load entries.")}`);
+
+  const groupNumbers = [...new Set(entries.map((e) => e.group_number as number))];
+  const holeByGroup = new Map(groupNumbers.map((g) => [g, num(formData, `hole_${g}`)]));
+
+  await Promise.all(
+    entries.map((e) => {
+      const hole = holeByGroup.get(e.group_number as number) ?? null;
+      return supabase.from("event_entries").update({ starting_hole: hole }).eq("id", e.id);
+    }),
+  );
+
+  await supabase.from("admin_audit_log").insert({
+    admin_id: adminId,
+    action: "update_group_starting_holes",
+    entity_type: "events",
+    entity_id: eventId,
+    after: { groups: groupNumbers.length },
+  });
+
+  revalidatePath(`/admin/events/${eventId}/day-sheet`);
+  redirect(`/admin/events/${eventId}/day-sheet?groupsSaved=1`);
+}
+
 // Times up whatever groups are currently set on confirmed entries (however
 // they got there — manual or auto-split) using each group's own number as
 // its order: group 1 tees off at start_time, group 2 at start_time +
 // gap_minutes, and so on. Entries with no group number are left alone.
+// Groups on different starting holes (a split tee start) each get their own
+// independent sequence, all starting from the same start_time — e.g. the
+// first group off the 1st and the first group off the 18th both tee off at
+// start_time, the second group on each hole at start_time + gap, and so on.
 export async function applyTeeTimesToGroups(eventId: string, formData: FormData) {
   const { supabase, adminId } = await requireAdmin();
 
@@ -391,7 +434,7 @@ export async function applyTeeTimesToGroups(eventId: string, formData: FormData)
 
   const { data: entries } = await supabase
     .from("event_entries")
-    .select("id, group_number")
+    .select("id, group_number, starting_hole")
     .eq("event_id", eventId)
     .eq("status", "confirmed")
     .not("group_number", "is", null);
@@ -400,15 +443,32 @@ export async function applyTeeTimesToGroups(eventId: string, formData: FormData)
     redirect(`/admin/events/${eventId}/day-sheet?error=${encodeURIComponent("No groups assigned yet — assign players to groups first.")}`);
   }
 
-  const groupNumbers = [...new Set(entries.map((e) => e.group_number as number))].sort((a, b) => a - b);
+  // One representative starting_hole per group (all players in a group share it).
+  const holeByGroup = new Map<number, number | null>();
+  for (const e of entries) {
+    const g = e.group_number as number;
+    if (!holeByGroup.has(g)) holeByGroup.set(g, e.starting_hole);
+  }
+
+  // Bucket groups by starting hole (null = the default, unsplit bucket), and
+  // give each bucket its own independent start_time-based sequence.
+  const groupsByHole = new Map<number | null, number[]>();
+  for (const [g, hole] of holeByGroup) {
+    const list = groupsByHole.get(hole) ?? [];
+    list.push(g);
+    groupsByHole.set(hole, list);
+  }
+
   const [startHour, startMin] = startTime.split(":").map(Number);
   const startTotalMinutes = startHour * 60 + startMin;
-  const timeByGroup = new Map(
-    groupNumbers.map((g, i) => {
+  const timeByGroup = new Map<number, string>();
+  for (const groupsOnThisHole of groupsByHole.values()) {
+    groupsOnThisHole.sort((a, b) => a - b);
+    groupsOnThisHole.forEach((g, i) => {
       const minutes = (startTotalMinutes + i * gapMinutes) % 1440;
-      return [g, `${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`];
-    }),
-  );
+      timeByGroup.set(g, `${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`);
+    });
+  }
 
   await Promise.all(
     entries.map((e) => supabase.from("event_entries").update({ tee_time: timeByGroup.get(e.group_number as number) }).eq("id", e.id)),
@@ -419,7 +479,7 @@ export async function applyTeeTimesToGroups(eventId: string, formData: FormData)
     action: "apply_tee_times_to_groups",
     entity_type: "events",
     entity_id: eventId,
-    after: { start_time: startTime, gap_minutes: gapMinutes, groups: groupNumbers.length },
+    after: { start_time: startTime, gap_minutes: gapMinutes, groups: holeByGroup.size, holes: groupsByHole.size },
   });
 
   revalidatePath(`/admin/events/${eventId}/day-sheet`);
