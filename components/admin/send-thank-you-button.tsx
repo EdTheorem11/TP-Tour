@@ -18,11 +18,16 @@ export function SendThankYouButton({ eventId, alreadySentAt }: { eventId: string
 
     startTransition(async () => {
       const result = await sendEventThankYouEmails(eventId);
-      setToast(
-        result.error
-          ? { message: result.error, variant: "error" }
-          : { message: `Sent to ${result.sent} player${result.sent === 1 ? "" : "s"}.`, variant: "success" },
-      );
+      if (result.error) {
+        setToast({ message: result.error, variant: "error" });
+      } else if (result.failed && result.failed.length > 0) {
+        setToast({
+          message: `Sent to ${result.sent} of ${result.total}. Couldn't send to: ${result.failed.join(", ")}`,
+          variant: "error",
+        });
+      } else {
+        setToast({ message: `Sent to ${result.sent} player${result.sent === 1 ? "" : "s"}.`, variant: "success" });
+      }
     });
   };
 

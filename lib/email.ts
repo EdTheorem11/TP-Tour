@@ -193,8 +193,35 @@ export async function sendWaitingListConfirmedEmail(to: string, firstName: strin
   return send(to, `Waiting List — ${eventName}`, html);
 }
 
-export async function sendEventThankYouEmail(
-  to: string,
+// Sends the same thank-you email to many recipients via Resend's batch API
+// (up to 100 per request). One-at-a-time sends hit Resend's per-second rate
+// limit and the serverless timeout on larger events, silently dropping the
+// tail of the list. Returns the addresses that did not go out.
+export async function sendEventThankYouEmailBatch(
+  recipients: string[],
+  event: { name: string; slug: string },
+  nextEvent: { name: string; slug: string; event_date: string } | null,
+): Promise<{ failed: string[] }> {
+  const client = getClient();
+  if (!client) {
+    console.log(`[email] Skipped (no RESEND_API_KEY configured) — would have sent thank-you to ${recipients.length} recipients`);
+    return { failed: [] };
+  }
+  const { subject, html } = thankYouContent(event, nextEvent);
+  const failed: string[] = [];
+  for (let i = 0; i < recipients.length; i += 100) {
+    const chunk = recipients.slice(i, i + 100);
+    try {
+      const { error } = await client.batch.send(chunk.map((to) => ({ from: FROM, to, subject, html })));
+      if (error) failed.push(...chunk);
+    } catch {
+      failed.push(...chunk);
+    }
+  }
+  return { failed };
+}
+
+function thankYouContent(
   event: { name: string; slug: string },
   nextEvent: { name: string; slug: string; event_date: string } | null,
 ) {
@@ -211,7 +238,7 @@ export async function sendEventThankYouEmail(
      }`,
     `Thank you for playing ${event.name}.`,
   );
-  return send(to, `Thank You for Playing ${event.name}`, html);
+  return { subject: `Thank You for Playing ${event.name}`, html };
 }
 
 export async function sendWaitingListPromotedEmail(to: string, firstName: string, attendeeName: string, event: EventEmailDetails) {

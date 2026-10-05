@@ -15,6 +15,8 @@ import {
 import { formatEventDateLong, formatHandicap, formatPrice, tbc } from "@/lib/format";
 import type { TourEvent, PaymentStatus } from "@/lib/types";
 
+export const maxDuration = 60;
+
 interface EntryRow {
   id: string;
   status: string;

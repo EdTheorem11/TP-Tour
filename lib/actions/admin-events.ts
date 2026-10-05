@@ -3,7 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { sendEventEntryConfirmedEmail, sendWaitingListPromotedEmail, sendEventThankYouEmail } from "@/lib/email";
+import { sendEventEntryConfirmedEmail, sendWaitingListPromotedEmail, sendEventThankYouEmailBatch } from "@/lib/email";
 
 function slugify(input: string): string {
   return input
@@ -238,7 +238,9 @@ export async function removeFromWaitingList(eventId: string, waitingListId: stri
 // confirmed, non-guest entrant (guests have no email on file to reach).
 // Marks the event as sent so it can't be double-fired by accident, though
 // an admin can deliberately resend by calling this again.
-export async function sendEventThankYouEmails(eventId: string): Promise<{ error?: string; sent?: number }> {
+export async function sendEventThankYouEmails(
+  eventId: string,
+): Promise<{ error?: string; sent?: number; total?: number; failed?: string[] }> {
   const { supabase, adminId } = await requireAdmin();
 
   const { data: event } = await supabase.from("events").select("id, slug, name").eq("id", eventId).single();
@@ -251,32 +253,35 @@ export async function sendEventThankYouEmails(eventId: string): Promise<{ error?
     .eq("status", "confirmed")
     .eq("is_guest", false);
 
-  const recipients = ((entrants ?? []) as unknown as Array<{ member_profiles: { email: string; first_name: string } | null }>)
-    .map((e) => e.member_profiles)
-    .filter((m): m is { email: string; first_name: string } => m !== null);
+  const emails = [
+    ...new Set(
+      ((entrants ?? []) as unknown as Array<{ member_profiles: { email: string } | null }>)
+        .map((e) => e.member_profiles?.email)
+        .filter((m): m is string => !!m),
+    ),
+  ];
 
-  if (recipients.length === 0) return { error: "No confirmed members entered this event." };
+  if (emails.length === 0) return { error: "No confirmed members entered this event." };
 
   const { data: nextEventRows } = await supabase.from("next_event").select("name, slug, event_date").limit(1);
   const nextEvent = nextEventRows?.[0] ?? null;
 
-  let sent = 0;
-  for (const r of recipients) {
-    const { error } = await sendEventThankYouEmail(r.email, event, nextEvent);
-    if (!error) sent++;
-  }
+  const { failed } = await sendEventThankYouEmailBatch(emails, event, nextEvent);
+  const sent = emails.length - failed.length;
 
-  await supabase.from("events").update({ attendee_thank_you_sent_at: new Date().toISOString() }).eq("id", eventId);
+  if (sent > 0) {
+    await supabase.from("events").update({ attendee_thank_you_sent_at: new Date().toISOString() }).eq("id", eventId);
+  }
   await supabase.from("admin_audit_log").insert({
     admin_id: adminId,
     action: "send_thank_you_emails",
     entity_type: "events",
     entity_id: eventId,
-    after: { sent, attempted: recipients.length },
+    after: { sent, attempted: emails.length, failed },
   });
 
   revalidatePath(`/admin/entries/${eventId}`);
-  return { sent };
+  return { sent, total: emails.length, failed };
 }
 
 // Splits confirmed entrants evenly across the requested number of tee times
