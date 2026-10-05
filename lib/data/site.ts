@@ -169,16 +169,58 @@ export async function getLatestCompletedEvent(): Promise<TourEvent | null> {
   }, null);
 }
 
+// Flat row from the published_event_results view. event_results' own embeds
+// (member_profiles, event_scores) come back empty for regular members because
+// of RLS, so members read results through the view instead.
+interface PublishedResultRow {
+  id: string;
+  event_id: string;
+  member_id: string;
+  position: number;
+  position_display: string;
+  oom_points: number;
+  published: boolean;
+  first_name: string | null;
+  last_name: string | null;
+  avatar_url: string | null;
+  playing_handicap: number | null;
+  gross_score: number | null;
+  nett_score: number | null;
+  stableford_points: number | null;
+  event_name: string;
+  event_slug: string;
+  event_date: string;
+  event_format: string | null;
+}
+
+function toScores(r: PublishedResultRow) {
+  return {
+    playing_handicap: r.playing_handicap,
+    gross_score: r.gross_score,
+    nett_score: r.nett_score,
+    stableford_points: r.stableford_points,
+  };
+}
+
 export async function getEventResults(eventId: string): Promise<EventResult[]> {
   return safe(async () => {
     const supabase = await createClient();
     const { data } = await supabase
-      .from("event_results")
-      .select("*, member_profiles(first_name, last_name, avatar_url), event_scores(playing_handicap, gross_score, nett_score, stableford_points)")
+      .from("published_event_results")
+      .select("*")
       .eq("event_id", eventId)
-      .eq("published", true)
       .order("position", { ascending: true });
-    return (data as EventResult[]) ?? [];
+    return ((data ?? []) as unknown as PublishedResultRow[]).map((r) => ({
+      id: r.id,
+      event_id: r.event_id,
+      member_id: r.member_id,
+      position: r.position,
+      position_display: r.position_display,
+      oom_points: r.oom_points,
+      published: r.published,
+      member_profiles: { first_name: r.first_name ?? "", last_name: r.last_name ?? "", avatar_url: r.avatar_url },
+      event_scores: toScores(r),
+    })) as EventResult[];
   }, []);
 }
 
@@ -337,12 +379,15 @@ export async function getPlayerSeasonResults(memberId: string) {
   return safe(async () => {
     const supabase = await createClient();
     const { data } = await supabase
-      .from("event_results")
-      .select("*, events(name, slug, event_date, format), event_scores(playing_handicap, gross_score, nett_score, stableford_points)")
+      .from("published_event_results")
+      .select("*")
       .eq("member_id", memberId)
-      .eq("published", true)
       .order("created_at", { ascending: false });
-    return data ?? [];
+    return ((data ?? []) as unknown as PublishedResultRow[]).map((r) => ({
+      ...r,
+      events: { name: r.event_name, slug: r.event_slug, event_date: r.event_date, format: r.event_format },
+      event_scores: toScores(r),
+    }));
   }, []);
 }
 
