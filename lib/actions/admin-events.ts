@@ -236,41 +236,51 @@ export async function removeFromWaitingList(eventId: string, waitingListId: stri
 
 // Manual trigger for the "thanks for playing" email — sends to every
 // confirmed, non-guest entrant (guests have no email on file to reach).
-// Marks the event as sent so it can't be double-fired by accident, though
-// an admin can deliberately resend by calling this again.
+// Each entry is stamped when its email goes out, so mode "unsent" (the
+// default) only targets entrants who haven't received it yet — safe to
+// re-run after a partial send. Mode "all" deliberately resends to everyone.
 export async function sendEventThankYouEmails(
   eventId: string,
+  mode: "unsent" | "all" = "unsent",
 ): Promise<{ error?: string; sent?: number; total?: number; failed?: string[] }> {
   const { supabase, adminId } = await requireAdmin();
 
   const { data: event } = await supabase.from("events").select("id, slug, name").eq("id", eventId).single();
   if (!event) return { error: "Event not found." };
 
-  const { data: entrants } = await supabase
+  let query = supabase
     .from("event_entries")
-    .select("member_profiles(email, first_name)")
+    .select("id, member_profiles(email)")
     .eq("event_id", eventId)
     .eq("status", "confirmed")
     .eq("is_guest", false);
+  if (mode === "unsent") query = query.is("thank_you_sent_at", null);
+  const { data: entrants } = await query;
 
-  const emails = [
-    ...new Set(
-      ((entrants ?? []) as unknown as Array<{ member_profiles: { email: string } | null }>)
-        .map((e) => e.member_profiles?.email)
-        .filter((m): m is string => !!m),
-    ),
-  ];
+  const idsByEmail = new Map<string, string[]>();
+  for (const e of (entrants ?? []) as unknown as Array<{ id: string; member_profiles: { email: string } | null }>) {
+    const email = e.member_profiles?.email;
+    if (!email) continue;
+    idsByEmail.set(email, [...(idsByEmail.get(email) ?? []), e.id]);
+  }
+  const emails = [...idsByEmail.keys()];
 
-  if (emails.length === 0) return { error: "No confirmed members entered this event." };
+  if (emails.length === 0) {
+    return { error: mode === "unsent" ? "Everyone has already been sent this email." : "No confirmed members entered this event." };
+  }
 
   const { data: nextEventRows } = await supabase.from("next_event").select("name, slug, event_date").limit(1);
   const nextEvent = nextEventRows?.[0] ?? null;
 
   const { failed } = await sendEventThankYouEmailBatch(emails, event, nextEvent);
+  const failedSet = new Set(failed);
+  const sentEntryIds = emails.filter((m) => !failedSet.has(m)).flatMap((m) => idsByEmail.get(m) ?? []);
   const sent = emails.length - failed.length;
 
-  if (sent > 0) {
-    await supabase.from("events").update({ attendee_thank_you_sent_at: new Date().toISOString() }).eq("id", eventId);
+  if (sentEntryIds.length > 0) {
+    const now = new Date().toISOString();
+    await supabase.from("event_entries").update({ thank_you_sent_at: now }).in("id", sentEntryIds);
+    await supabase.from("events").update({ attendee_thank_you_sent_at: now }).eq("id", eventId);
   }
   await supabase.from("admin_audit_log").insert({
     admin_id: adminId,

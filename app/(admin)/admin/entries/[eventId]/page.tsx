@@ -26,6 +26,7 @@ interface EntryRow {
   is_guest: boolean;
   guest_name: string | null;
   playing_handicap: number | null;
+  thank_you_sent_at: string | null;
   member_profiles: { first_name: string; last_name: string; company: string | null; current_handicap: number | null } | null;
 }
 
@@ -64,6 +65,8 @@ export default async function AdminEntriesForEventPage({
   ]);
 
   const confirmed = entries.filter((e) => e.status === "confirmed");
+  const thankYouRecipients = confirmed.filter((e) => !e.is_guest);
+  const thankYouRemaining = thankYouRecipients.filter((e) => !e.thank_you_sent_at).length;
   const searchableMembers = allMembers.map((m) => ({
     id: m.id,
     name: `${m.first_name} ${m.last_name}`,
@@ -87,7 +90,12 @@ export default async function AdminEntriesForEventPage({
             Download CSV
           </a>
           <PrintButton />
-          <SendThankYouButton eventId={eventId} alreadySentAt={eventDetails.attendee_thank_you_sent_at} />
+          <SendThankYouButton
+            eventId={eventId}
+            alreadySentAt={eventDetails.attendee_thank_you_sent_at}
+            total={thankYouRecipients.length}
+            remaining={thankYouRemaining}
+          />
         </div>
       </div>
 
