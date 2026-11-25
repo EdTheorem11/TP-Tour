@@ -94,6 +94,8 @@ export default async function DaySheetPage({
   const distinctHoles = [...new Set(grouped.keys())].length ? [...new Set([...holeByGroup.values()])].sort((a, b) => (a ?? 0) - (b ?? 0)) : [];
   const isSplitTee = distinctHoles.filter((h) => h !== null).length > 1;
   const isShotgun = !!eventDetails.shotgun_time;
+  // Offer to keep hand-made groups only if there are some and none is over 4.
+  const canKeepGroups = grouped.size > 0 && [...grouped.values()].every((l) => l.length <= 4);
 
   const groupNumbers = [...grouped.keys()].sort((a, b) => {
     const holeA = holeByGroup.get(a) ?? 999;
@@ -221,8 +223,9 @@ export default async function DaySheetPage({
         <div className={clsx("border bg-tp-dark p-6", isShotgun ? "border-tp-gold/50" : "border-white/10")}>
           <h2 className="font-heading text-sm font-bold uppercase text-tp-offwhite">Shotgun Start</h2>
           <p className="mt-1 text-xs text-tp-offwhite/50">
-            Everyone tees off at the same time, each group from its own hole &mdash; no gaps. Choose each group&rsquo;s
-            hole in Starting Holes below first, then apply.
+            Everyone tees off at the same time, no gaps. Splits all {entries.length} confirmed players into groups of
+            up to 4 (guests stay with their host) and gives each group a hole in order. Adjust holes or players below
+            afterwards.
           </p>
           {isShotgun && (
             <p className="mt-2 text-xs font-semibold uppercase tracking-[0.1em] text-tp-gold">
@@ -239,6 +242,16 @@ export default async function DaySheetPage({
                 defaultValue={eventDetails.shotgun_time ?? eventDetails.first_tee_time ?? ""}
               />
             </Field>
+            {grouped.size > 0 && (
+              <label className="flex items-start gap-2 text-xs text-tp-offwhite/70">
+                <input type="checkbox" name="keep_groups" defaultChecked={canKeepGroups} className="mt-0.5" />
+                <span>
+                  Keep my current groups and holes &mdash; only place anyone not in a group yet. Untick to re-split
+                  everyone from scratch (replaces current groups).
+                  {!canKeepGroups && " A group is over 4, so re-splitting is recommended."}
+                </span>
+              </label>
+            )}
             <Button type="submit" variant="gold" size="sm">Apply Shotgun Start</Button>
           </form>
         </div>

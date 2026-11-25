@@ -4,6 +4,7 @@ import { useMemo, useRef, useState, useTransition } from "react";
 import { clsx } from "clsx";
 import { saveGroupAssignments } from "@/lib/actions/admin-events";
 import { Button } from "@/components/ui/button";
+import { MAX_GROUP_SIZE } from "@/lib/tee-sheet";
 
 export interface BoardEntry {
   id: string;
@@ -21,8 +22,6 @@ function ordinal(n: number): string {
   const v = n % 100;
   return `${n}${s[(v - 20) % 10] ?? s[v] ?? s[0]}`;
 }
-
-const MAX_GROUP_SIZE = 4;
 
 interface BoardState {
   groups: Record<number, string[]>;
