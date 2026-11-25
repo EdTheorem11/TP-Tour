@@ -3,7 +3,14 @@ import Image from "next/image";
 import { clsx } from "clsx";
 import { createClient } from "@/lib/supabase/server";
 import { getEventEntriesAdmin } from "@/lib/data/admin";
-import { generateTeeSheet, updateGroupStartingHoles, applyTeeTimesToGroups, publishTeeTimes, unpublishTeeTimes } from "@/lib/actions/admin-events";
+import {
+  generateTeeSheet,
+  updateGroupStartingHoles,
+  applyTeeTimesToGroups,
+  applyShotgunStart,
+  publishTeeTimes,
+  unpublishTeeTimes,
+} from "@/lib/actions/admin-events";
 import { Button, LinkButton } from "@/components/ui/button";
 import { PrintButton } from "@/components/admin/print-button";
 import { AutoToast } from "@/components/admin/auto-toast";
@@ -86,6 +93,7 @@ export default async function DaySheetPage({
   for (const g of grouped.keys()) holeByGroup.set(g, grouped.get(g)![0].starting_hole);
   const distinctHoles = [...new Set(grouped.keys())].length ? [...new Set([...holeByGroup.values()])].sort((a, b) => (a ?? 0) - (b ?? 0)) : [];
   const isSplitTee = distinctHoles.filter((h) => h !== null).length > 1;
+  const isShotgun = !!eventDetails.shotgun_time;
 
   const groupNumbers = [...grouped.keys()].sort((a, b) => {
     const holeA = holeByGroup.get(a) ?? 999;
@@ -98,6 +106,14 @@ export default async function DaySheetPage({
   // confusingly (1,3,5...17,2,4...) once holes are set, making groups look
   // missing rather than just reordered.
   const groupNumbersAscending = [...grouped.keys()].sort((a, b) => a - b);
+  // "Hole 5", or "Hole 5A" / "Hole 5B" when several groups share a hole.
+  const holeLabel = (g: number): string => {
+    const hole = holeByGroup.get(g) ?? null;
+    if (hole === null) return "Hole TBC";
+    const sameHole = groupNumbers.filter((x) => holeByGroup.get(x) === hole);
+    const suffix = sameHole.length > 1 ? String.fromCharCode(65 + sameHole.indexOf(g)) : "";
+    return `Hole ${hole}${suffix}`;
+  };
   const boardEntries: BoardEntry[] = entries.map((e) => ({
     id: e.id,
     name: e.is_guest ? (e.guest_name ?? "") : `${e.member_profiles?.first_name ?? ""} ${e.member_profiles?.last_name ?? ""}`.trim(),
@@ -163,7 +179,7 @@ export default async function DaySheetPage({
         <div className="mt-6 border border-red-500/40 bg-red-500/10 px-5 py-3 text-sm text-red-400 print:hidden">{errorMessage}</div>
       )}
 
-      <div className="mt-8 grid gap-6 lg:grid-cols-2 print:hidden">
+      <div className="mt-8 grid gap-6 lg:grid-cols-3 print:hidden">
         <div className="border border-white/10 bg-tp-dark p-6">
           <h2 className="font-heading text-sm font-bold uppercase text-tp-offwhite">Quick Auto-Split</h2>
           <p className="mt-1 text-xs text-tp-offwhite/50">
@@ -201,29 +217,53 @@ export default async function DaySheetPage({
             <Button type="submit" variant="outline" size="sm">Apply Tee Times</Button>
           </form>
         </div>
+
+        <div className={clsx("border bg-tp-dark p-6", isShotgun ? "border-tp-gold/50" : "border-white/10")}>
+          <h2 className="font-heading text-sm font-bold uppercase text-tp-offwhite">Shotgun Start</h2>
+          <p className="mt-1 text-xs text-tp-offwhite/50">
+            Everyone tees off at the same time, each group from its own hole &mdash; no gaps. Choose each group&rsquo;s
+            hole in Starting Holes below first, then apply.
+          </p>
+          {isShotgun && (
+            <p className="mt-2 text-xs font-semibold uppercase tracking-[0.1em] text-tp-gold">
+              Currently a shotgun start at {eventDetails.shotgun_time}
+            </p>
+          )}
+          <form action={applyShotgunStart.bind(null, id)} className="mt-4 space-y-4">
+            <Field label="Shotgun Start Time">
+              <input
+                type="time"
+                name="start_time"
+                required
+                className={inputClass}
+                defaultValue={eventDetails.shotgun_time ?? eventDetails.first_tee_time ?? ""}
+              />
+            </Field>
+            <Button type="submit" variant="gold" size="sm">Apply Shotgun Start</Button>
+          </form>
+        </div>
       </div>
 
       {groupNumbers.length > 0 && (
         <div className="mt-6 border border-white/10 bg-tp-dark p-6 print:hidden">
-          <h2 className="font-heading text-sm font-bold uppercase text-tp-offwhite">Set Starting Holes (Split Tee)</h2>
+          <h2 className="font-heading text-sm font-bold uppercase text-tp-offwhite">Starting Holes</h2>
           <p className="mt-1 text-xs text-tp-offwhite/50">
-            Only needed for a split tee start (e.g. some groups off the 1st, others off the 18th, all at the same
-            time). Leave blank for a normal single-tee start. Set a hole number per group, then use Apply Times to
-            Groups above.
+            Choose which hole each group tees off from. Required for a shotgun start (several groups can share a hole
+            &mdash; they print as A / B). Also used for a split tee start (e.g. some groups off the 1st, others off the
+            18th). Leave blank for a normal single-tee start. Save, then apply times above.
           </p>
           <form action={updateGroupStartingHoles.bind(null, id)} className="mt-4">
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
               {groupNumbersAscending.map((g) => (
                 <Field key={g} label={`Group ${g}`}>
-                  <input
-                    type="number"
-                    name={`hole_${g}`}
-                    min="1"
-                    max="18"
-                    placeholder="Hole"
-                    defaultValue={holeByGroup.get(g) ?? ""}
-                    className={inputClass}
-                  />
+                  <select name={`hole_${g}`} defaultValue={holeByGroup.get(g) ?? ""} className={inputClass}>
+                    <option value="">Hole&hellip;</option>
+                    {Array.from({ length: 18 }, (_, i) => i + 1).map((h) => (
+                      <option key={h} value={h}>
+                        Hole {h}
+                      </option>
+                    ))}
+                  </select>
                 </Field>
               ))}
             </div>
@@ -264,7 +304,14 @@ export default async function DaySheetPage({
           </p>
 
           <div className="mt-9">
-            <h3 className="font-heading text-lg font-bold uppercase tracking-tight text-tp-black">Tee Times</h3>
+            <h3 className="font-heading text-lg font-bold uppercase tracking-tight text-tp-black">
+              {isShotgun ? "Shotgun Start" : "Tee Times"}
+            </h3>
+            {isShotgun && groupNumbers.length > 0 && (
+              <p className="mt-1 text-sm font-bold uppercase tracking-[0.1em] text-tp-gold">
+                All groups tee off at {eventDetails.shotgun_time}
+              </p>
+            )}
             {groupNumbers.length === 0 ? (
               <p className="mt-2 text-black/50">No tee times generated yet.</p>
             ) : (
@@ -273,7 +320,7 @@ export default async function DaySheetPage({
                   const players = grouped.get(g)!;
                   const hole = holeByGroup.get(g) ?? null;
                   const prevHole = i > 0 ? (holeByGroup.get(groupNumbers[i - 1]) ?? null) : undefined;
-                  const showHoleHeading = isSplitTee && hole !== prevHole;
+                  const showHoleHeading = isSplitTee && !isShotgun && hole !== prevHole;
                   return (
                     <div key={g}>
                       {showHoleHeading && (
@@ -290,8 +337,14 @@ export default async function DaySheetPage({
                             {g}
                           </span>
                           <p className="text-sm font-bold uppercase tracking-[0.08em] text-tp-black">
-                            {tbc(players[0].tee_time)}
-                            {!isSplitTee && hole !== null && ` · ${ordinal(hole)} Tee`}
+                            {isShotgun ? (
+                              holeLabel(g)
+                            ) : (
+                              <>
+                                {tbc(players[0].tee_time)}
+                                {!isSplitTee && hole !== null && ` · ${ordinal(hole)} Tee`}
+                              </>
+                            )}
                           </p>
                         </div>
                         <div className="mt-2 space-y-2">

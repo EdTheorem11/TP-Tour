@@ -378,7 +378,7 @@ export async function saveGroupAssignments(
 
   const { data: current } = await supabase
     .from("event_entries")
-    .select("id, group_number")
+    .select("id, group_number, starting_hole")
     .eq("event_id", eventId)
     .in(
       "id",
@@ -386,14 +386,31 @@ export async function saveGroupAssignments(
     );
   const currentGroupById = new Map((current ?? []).map((e) => [e.id, e.group_number as number | null]));
 
+  // A group's starting hole, read from members who are staying put, so a
+  // player dragged in picks up their new group's hole instead of keeping the
+  // one from the group they left.
+  const holeByGroup = new Map<number, number>();
+  for (const e of current ?? []) {
+    const stays = assignments.find((a) => a.id === e.id)?.group === e.group_number;
+    if (stays && e.group_number !== null && e.starting_hole !== null) holeByGroup.set(e.group_number, e.starting_hole);
+  }
+
   await Promise.all(
     assignments.map((a) => {
       const groupChanged = currentGroupById.get(a.id) !== a.group;
-      const update: { group_number: number | null; group_position: number | null; tee_time?: null } = {
+      const update: {
+        group_number: number | null;
+        group_position: number | null;
+        tee_time?: null;
+        starting_hole?: number | null;
+      } = {
         group_number: a.group,
         group_position: a.position,
       };
-      if (groupChanged) update.tee_time = null;
+      if (groupChanged) {
+        update.tee_time = null;
+        update.starting_hole = a.group === null ? null : (holeByGroup.get(a.group) ?? null);
+      }
       return supabase.from("event_entries").update(update).eq("id", a.id);
     }),
   );
@@ -507,6 +524,14 @@ export async function applyTeeTimesToGroups(eventId: string, formData: FormData)
     entries.map((e) => supabase.from("event_entries").update({ tee_time: timeByGroup.get(e.group_number as number) }).eq("id", e.id)),
   );
 
+  // Applying staggered times to an event that was set up as a shotgun start
+  // switches it back: clear the shotgun time and make this its first tee.
+  const { data: ev } = await supabase.from("events").select("slug, shotgun_time").eq("id", eventId).single();
+  if (ev?.shotgun_time) {
+    await supabase.from("events").update({ shotgun_time: null, first_tee_time: startTime }).eq("id", eventId);
+    revalidatePath(`/events/${ev.slug}`);
+  }
+
   await supabase.from("admin_audit_log").insert({
     admin_id: adminId,
     action: "apply_tee_times_to_groups",
@@ -517,6 +542,68 @@ export async function applyTeeTimesToGroups(eventId: string, formData: FormData)
 
   revalidatePath(`/admin/events/${eventId}/day-sheet`);
   redirect(`/admin/events/${eventId}/day-sheet?generated=1`);
+}
+
+// Shotgun start: every group tees off at the same time, each from its own
+// starting hole (set in the Starting Holes form). No gaps. Stored by setting
+// the event's shotgun_time (the existing "shotgun instead of first tee"
+// field), which is what the day sheet and event page key off; first_tee_time
+// is cleared so the two never disagree on the public page or calendar invite.
+export async function applyShotgunStart(eventId: string, formData: FormData) {
+  const { supabase, adminId } = await requireAdmin();
+  const back = `/admin/events/${eventId}/day-sheet`;
+
+  const startTime = str(formData, "start_time");
+  if (!startTime || !/^\d{1,2}:\d{2}$/.test(startTime)) {
+    redirect(`${back}?error=${encodeURIComponent("Enter the shotgun start time.")}`);
+  }
+
+  const { data: entries } = await supabase
+    .from("event_entries")
+    .select("id, group_number, starting_hole")
+    .eq("event_id", eventId)
+    .eq("status", "confirmed")
+    .not("group_number", "is", null);
+
+  if (!entries || entries.length === 0) {
+    redirect(`${back}?error=${encodeURIComponent("No groups assigned yet — assign players to groups first.")}`);
+  }
+
+  const holeByGroup = new Map<number, number | null>();
+  for (const e of entries) {
+    const g = e.group_number as number;
+    if (!holeByGroup.has(g) || (holeByGroup.get(g) === null && e.starting_hole !== null)) holeByGroup.set(g, e.starting_hole);
+  }
+  const missing = [...holeByGroup].filter(([, hole]) => hole === null).map(([g]) => g).sort((a, b) => a - b);
+  if (missing.length > 0) {
+    redirect(
+      `${back}?error=${encodeURIComponent(`Choose a starting hole for every group first. Missing: Group ${missing.join(", ")}.`)}`,
+    );
+  }
+
+  const { data: ev } = await supabase.from("events").select("slug").eq("id", eventId).single();
+
+  await Promise.all(
+    entries.map((e) =>
+      supabase
+        .from("event_entries")
+        .update({ tee_time: startTime, starting_hole: holeByGroup.get(e.group_number as number) })
+        .eq("id", e.id),
+    ),
+  );
+  await supabase.from("events").update({ shotgun_time: startTime, first_tee_time: null }).eq("id", eventId);
+
+  await supabase.from("admin_audit_log").insert({
+    admin_id: adminId,
+    action: "apply_shotgun_start",
+    entity_type: "events",
+    entity_id: eventId,
+    after: { start_time: startTime, groups: holeByGroup.size },
+  });
+
+  revalidatePath(back);
+  if (ev) revalidatePath(`/events/${ev.slug}`);
+  redirect(`${back}?generated=1`);
 }
 
 // Publishes the day sheet's current tee times/groups to the public event

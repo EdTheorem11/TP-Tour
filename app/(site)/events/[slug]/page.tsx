@@ -95,6 +95,14 @@ export default async function EventDetailPage({ params }: { params: Promise<{ sl
     if (holeA !== holeB) return holeA - holeB;
     return a - b;
   });
+  const isShotgun = !!event.shotgun_time;
+  const teeHoleLabel = (g: number): string => {
+    const hole = teeHoleByGroup.get(g) ?? null;
+    if (hole === null) return "Hole TBC";
+    const sameHole = teeGroupNumbers.filter((x) => teeHoleByGroup.get(x) === hole);
+    const suffix = sameHole.length > 1 ? String.fromCharCode(65 + sameHole.indexOf(g)) : "";
+    return `Hole ${hole}${suffix}`;
+  };
 
   const facts = [
     { label: "Date", value: formatEventDateLong(event.event_date) },
@@ -301,13 +309,20 @@ export default async function EventDetailPage({ params }: { params: Promise<{ sl
 
             {event.status !== "completed" && event.tee_times_published && teeGroupNumbers.length > 0 ? (
               <div className="mt-10">
-                <h2 className="font-heading text-xl font-bold uppercase text-tp-offwhite">Tee Times</h2>
+                <h2 className="font-heading text-xl font-bold uppercase text-tp-offwhite">
+                  {isShotgun ? "Shotgun Start" : "Tee Times"}
+                </h2>
+                {isShotgun && (
+                  <p className="mt-1 text-sm font-semibold uppercase tracking-[0.1em] text-tp-gold">
+                    All groups tee off at {event.shotgun_time}
+                  </p>
+                )}
                 <div className="mt-4 space-y-5">
                   {teeGroupNumbers.map((g, i) => {
                     const players = teeGrouped.get(g)!;
                     const hole = teeHoleByGroup.get(g) ?? null;
                     const prevHole = i > 0 ? (teeHoleByGroup.get(teeGroupNumbers[i - 1]) ?? null) : undefined;
-                    const showHoleHeading = teeIsSplitTee && hole !== prevHole;
+                    const showHoleHeading = teeIsSplitTee && !isShotgun && hole !== prevHole;
                     return (
                       <div key={g}>
                         {showHoleHeading && (
@@ -321,8 +336,14 @@ export default async function EventDetailPage({ params }: { params: Promise<{ sl
                               {g}
                             </span>
                             <p className="text-sm font-bold uppercase tracking-[0.08em] text-tp-offwhite">
-                              {tbc(players[0].tee_time)}
-                              {!teeIsSplitTee && hole !== null && ` · ${ordinal(hole)} Tee`}
+                              {isShotgun ? (
+                                teeHoleLabel(g)
+                              ) : (
+                                <>
+                                  {tbc(players[0].tee_time)}
+                                  {!teeIsSplitTee && hole !== null && ` · ${ordinal(hole)} Tee`}
+                                </>
+                              )}
                             </p>
                           </div>
                           <div className="mt-2 space-y-1.5">
