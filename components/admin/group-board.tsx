@@ -22,6 +22,8 @@ function ordinal(n: number): string {
   return `${n}${s[(v - 20) % 10] ?? s[v] ?? s[0]}`;
 }
 
+const MAX_GROUP_SIZE = 4;
+
 interface BoardState {
   groups: Record<number, string[]>;
   unassigned: string[];
@@ -109,6 +111,12 @@ export function GroupBoard({ eventId, entries }: { eventId: string; entries: Boa
     const id = draggedId.current;
     draggedId.current = null;
     if (!id) return;
+    const alreadyThere = toGroup !== null && (state.groups[toGroup] ?? []).includes(id);
+    if (toGroup !== null && !alreadyThere && (state.groups[toGroup] ?? []).length >= MAX_GROUP_SIZE) {
+      setError(`Group ${toGroup} is full — a tee time can have at most ${MAX_GROUP_SIZE} players.`);
+      return;
+    }
+    setError(null);
     const next = moveEntry(state, id, toGroup, beforeEntryId);
     setState(next);
     persist(next);
@@ -217,7 +225,8 @@ export function GroupBoard({ eventId, entries }: { eventId: string; entries: Boa
               className={clsx(
                 "border-2 p-3 transition-colors",
                 dragOverTarget === targetKey ? "border-tp-gold bg-tp-gold/10" : "border-tp-gold/40 bg-tp-gold/[0.03]",
-                ids.length === 4 && "border-tp-gold/70",
+                ids.length === MAX_GROUP_SIZE && "border-tp-gold/70",
+                ids.length > MAX_GROUP_SIZE && "border-red-500/70 bg-red-500/[0.05]",
               )}
             >
               <div className="flex items-center justify-between gap-2">
@@ -233,8 +242,14 @@ export function GroupBoard({ eventId, entries }: { eventId: string; entries: Boa
                   )}
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-[11px] font-semibold uppercase tracking-[0.1em] text-tp-offwhite/40">
+                  <span
+                    className={clsx(
+                      "text-[11px] font-semibold uppercase tracking-[0.1em]",
+                      ids.length > MAX_GROUP_SIZE ? "text-red-400" : "text-tp-offwhite/40",
+                    )}
+                  >
                     {ids.length} player{ids.length === 1 ? "" : "s"}
+                    {ids.length > MAX_GROUP_SIZE && ` — max ${MAX_GROUP_SIZE}, move someone`}
                   </span>
                   {ids.length === 0 && (
                     <button

@@ -5,6 +5,8 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { sendEventEntryConfirmedEmail, sendWaitingListPromotedEmail, sendEventThankYouEmailBatch } from "@/lib/email";
 
+const MAX_GROUP_SIZE = 4;
+
 function slugify(input: string): string {
   return input
     .toLowerCase()
@@ -320,6 +322,14 @@ export async function generateTeeSheet(eventId: string, formData: FormData) {
   }
 
   const total = entries.length;
+  const minTeeTimes = Math.ceil(total / MAX_GROUP_SIZE);
+  if (teeTimeCount < minTeeTimes) {
+    redirect(
+      `/admin/events/${eventId}/day-sheet?error=${encodeURIComponent(
+        `${total} players need at least ${minTeeTimes} tee times (max ${MAX_GROUP_SIZE} per group) — you entered ${teeTimeCount}.`,
+      )}`,
+    );
+  }
   const base = Math.floor(total / teeTimeCount);
   const remainder = total % teeTimeCount;
   const [startHour, startMin] = startTime.split(":").map(Number);
@@ -385,6 +395,15 @@ export async function saveGroupAssignments(
       assignments.map((a) => a.id),
     );
   const currentGroupById = new Map((current ?? []).map((e) => [e.id, e.group_number as number | null]));
+
+  // Reject a group growing past the limit. Groups already over it (from an
+  // earlier auto-split) can still be saved while being fixed.
+  const newSize = new Map<number, number>();
+  const oldSize = new Map<number, number>();
+  for (const a of assignments) if (a.group !== null) newSize.set(a.group, (newSize.get(a.group) ?? 0) + 1);
+  for (const g of currentGroupById.values()) if (g !== null) oldSize.set(g, (oldSize.get(g) ?? 0) + 1);
+  const overfull = [...newSize].find(([g, n]) => n > MAX_GROUP_SIZE && n > (oldSize.get(g) ?? 0));
+  if (overfull) throw new Error(`Group ${overfull[0]} would have ${overfull[1]} players (max ${MAX_GROUP_SIZE}).`);
 
   // A group's starting hole, read from members who are staying put, so a
   // player dragged in picks up their new group's hole instead of keeping the
