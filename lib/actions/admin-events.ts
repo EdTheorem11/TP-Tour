@@ -373,12 +373,12 @@ export async function generateTeeSheet(eventId: string, formData: FormData) {
 // that group. No redirect, since the board stays mounted and applies changes
 // optimistically — this just persists them.
 //
-// A player moved to a *different* group has their tee_time cleared: it was
-// set for their old group's slot, and leaving it in place would show up as
-// that old time attached to the new group too — e.g. two groups both
-// appearing to tee off at the same time after a reshuffle, when really one
-// of them is just showing a stale value. Pure reordering within the same
-// group leaves tee_time alone, since the group's slot hasn't changed.
+// A player moved to a *different* group takes that group's tee time and
+// starting hole (or none, if it's a brand-new or unassigned slot). Leaving
+// their old values in place would show the old group's time on the new group
+// — e.g. two groups appearing to tee off at the same time after a reshuffle.
+// This also makes a swap work: each person takes the other's slot. Pure
+// reordering within the same group leaves everything alone.
 export async function saveGroupAssignments(
   eventId: string,
   assignments: { id: string; group: number | null; position: number | null }[],
@@ -387,7 +387,7 @@ export async function saveGroupAssignments(
 
   const { data: current } = await supabase
     .from("event_entries")
-    .select("id, group_number, starting_hole")
+    .select("id, group_number, starting_hole, tee_time")
     .eq("event_id", eventId)
     .in(
       "id",
@@ -404,13 +404,14 @@ export async function saveGroupAssignments(
   const overfull = [...newSize].find(([g, n]) => n > MAX_GROUP_SIZE && n > (oldSize.get(g) ?? 0));
   if (overfull) throw new Error(`Group ${overfull[0]} would have ${overfull[1]} players (max ${MAX_GROUP_SIZE}).`);
 
-  // A group's starting hole, read from members who are staying put, so a
-  // player dragged in picks up their new group's hole instead of keeping the
-  // one from the group they left.
+  // Each group's slot as it is right now (everyone in a group shares it),
+  // read before any moves so a swap hands each person the other's slot.
   const holeByGroup = new Map<number, number>();
+  const timeByGroup = new Map<number, string>();
   for (const e of current ?? []) {
-    const stays = assignments.find((a) => a.id === e.id)?.group === e.group_number;
-    if (stays && e.group_number !== null && e.starting_hole !== null) holeByGroup.set(e.group_number, e.starting_hole);
+    if (e.group_number === null) continue;
+    if (e.starting_hole !== null && !holeByGroup.has(e.group_number)) holeByGroup.set(e.group_number, e.starting_hole);
+    if (e.tee_time && !timeByGroup.has(e.group_number)) timeByGroup.set(e.group_number, e.tee_time);
   }
 
   await Promise.all(
@@ -419,14 +420,14 @@ export async function saveGroupAssignments(
       const update: {
         group_number: number | null;
         group_position: number | null;
-        tee_time?: null;
+        tee_time?: string | null;
         starting_hole?: number | null;
       } = {
         group_number: a.group,
         group_position: a.position,
       };
       if (groupChanged) {
-        update.tee_time = null;
+        update.tee_time = a.group === null ? null : (timeByGroup.get(a.group) ?? null);
         update.starting_hole = a.group === null ? null : (holeByGroup.get(a.group) ?? null);
       }
       return supabase.from("event_entries").update(update).eq("id", a.id);

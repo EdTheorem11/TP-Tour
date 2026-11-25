@@ -288,8 +288,8 @@ export default async function DaySheetPage({
       <div className="mt-6 border border-white/10 bg-tp-dark p-6 print:hidden">
         <h2 className="font-heading text-sm font-bold uppercase text-tp-offwhite">Assign Players to Groups</h2>
         <p className="mt-1 text-xs text-tp-offwhite/50">
-          Drag players between groups to honour specific pairing requests, or drag onto another player within a group
-          to reorder them. Changes save automatically. Use + Add Group for a new empty 4-ball.
+          Pick a player up and drop them on someone else to swap places &mdash; across groups or within one. Changes
+          save automatically. Groups hold a maximum of 4; use + Add Group for a new empty one.
         </p>
         <div className="mt-4">
           <GroupBoard eventId={id} entries={boardEntries} />
